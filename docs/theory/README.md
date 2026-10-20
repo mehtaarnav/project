@@ -45,7 +45,7 @@ forms only — run it to reproduce).
   replaced from CAD/measurement. Results that depend on them are not
   quantitative predictions.
 
-## Two inconsistencies found while deriving the spec (read before using results)
+## Inconsistencies in the input data
 
 1. **Sheave angle vs. stroke vs. ratio range.** With the half-angle
    `beta = 45°` (flank measured from the radial plane), axial travel `s` of one
