@@ -151,15 +151,21 @@ def lhs(n, d, rng):
     return u
 
 
-def bands(run_fn, inputs, k=5, n=30, seed=0, metrics=DECISION_METRICS, workers=None, scr=None, rng=None):
-    """Latin-hypercube bands over the top-k inputs of a screen (computed here unless `scr` given).
+def bands(run_fn, inputs, k=5, n=30, seed=0, metrics=DECISION_METRICS, workers=None, scr=None, rng=None,
+          top_names=None):
+    """Latin-hypercube sensitivity bands over the top-k inputs of a screen (computed here unless `scr`
+    or `top_names` is given). Inputs are sampled uniformly over their ranges: the bands are a
+    sensitivity envelope of the assumed ranges, not confidence intervals.
 
     Returns dict(top=[input names], samples=(n, k) values, results=[metric dicts],
     stats={metric: (p5, median, p95)}, screen=scr).
     """
-    scr = scr or screen(run_fn, inputs, metrics, workers)
     by_name = {e["name"]: e for e in inputs}
-    top = [by_name[r["name"]] for r in scr["rows"][:k]]
+    if top_names:
+        top = [by_name[nm] for nm in top_names]
+    else:
+        scr = scr or screen(run_fn, inputs, metrics, workers)
+        top = [by_name[r["name"]] for r in scr["rows"][:k]]
     rng = rng or np.random.default_rng(seed)
     u = lhs(n, len(top), rng)
     lo, hi = np.array([e["low"] for e in top]), np.array([e["high"] for e in top])
@@ -236,7 +242,7 @@ def bands_figure(b):
     axes.flat[0].legend()
     for ax in list(axes.flat)[len(ms):]:
         ax.axis("off")
-    fig.suptitle("Latin-hypercube bands over inputs: " + ", ".join(b["top"]), fontsize=9)
+    fig.suptitle("Sensitivity bands (uniform over assumed ranges, not confidence intervals): " + ", ".join(b["top"]), fontsize=9)
     fig.tight_layout()
     return fig
 
@@ -245,12 +251,16 @@ def summarize(name, scr, b=None, extra=None):
     """Write the uq summary run: markdown table plus tornado.png (and bands.png)."""
     import matplotlib.pyplot as plt
     run = runs.Run(name, dict(inputs=load_inputs(), **(extra or {})), group="uq")
-    md = "# Uncertainty screen\n\nEntries are (low - nominal)/nominal / (high - nominal)/nominal.\n\n" + screen_table(scr)
-    fig = tornado_figure(scr)
-    run.figure(fig, "tornado")
-    plt.close(fig)
+    md = ""
+    if scr is not None:
+        md = "# Uncertainty screen\n\nEntries are (low - nominal)/nominal / (high - nominal)/nominal.\n\n" + screen_table(scr)
+        fig = tornado_figure(scr)
+        run.figure(fig, "tornado")
+        plt.close(fig)
     if b is not None:
-        md += f"\n# Bands (top {len(b['top'])}: {', '.join(b['top'])}; n = {len(b['results'])})\n\n" + bands_table(b)
+        md += ("\nInputs sampled uniformly over their assumed ranges: a sensitivity envelope, "
+               "not a confidence interval.\n")
+        md += f"\n# Sensitivity bands (top {len(b['top'])}: {', '.join(b['top'])}; n = {len(b['results'])})\n\n" + bands_table(b)
         fig = bands_figure(b)
         run.figure(fig, "bands")
         plt.close(fig)
@@ -270,6 +280,7 @@ def main(argv=None, run_fn=None):
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=None)
     ap.add_argument("--only", nargs="+", default=None, help="screen only these input names")
+    ap.add_argument("--top", nargs="+", default=None, help="bands: sample these inputs, skip the screen")
     a = ap.parse_args(argv)
     inputs, skipped = available(load_inputs())
     if a.only:
@@ -280,9 +291,13 @@ def main(argv=None, run_fn=None):
     if skipped:
         print("skipped (path not in parameters yet):", ", ".join(e["path"] for e in skipped))
     run_fn = run_fn or DefaultRun(a.t_end)
-    scr = screen(run_fn, inputs, workers=a.workers)
-    b = bands(run_fn, inputs, a.k, a.n, a.seed, workers=a.workers, scr=scr) if a.cmd == "bands" else None
-    d, md = summarize(f"uq-{a.cmd}", scr, b, dict(t_end=a.t_end, k=a.k, n=a.n, seed=a.seed, only=a.only))
+    if a.cmd == "bands" and a.top:
+        scr = None
+        b = bands(run_fn, inputs, len(a.top), a.n, a.seed, workers=a.workers, top_names=a.top)
+    else:
+        scr = screen(run_fn, inputs, workers=a.workers)
+        b = bands(run_fn, inputs, a.k, a.n, a.seed, workers=a.workers, scr=scr) if a.cmd == "bands" else None
+    d, md = summarize(f"uq-{a.cmd}", scr, b, dict(t_end=a.t_end, k=a.k, n=a.n, seed=a.seed, only=a.only, top=a.top))
     print(d)
     print(md)
 

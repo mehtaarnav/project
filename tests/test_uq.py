@@ -87,3 +87,15 @@ def test_cli_smoke(tmp_path, monkeypatch):
     for f in ("tornado.png", "bands.png", "uq.md", "metrics.json", "config.yaml"):
         assert (out[0] / f).exists()
     assert "| belt_mu |" in (out[0] / "uq.md").read_text()
+
+
+def test_bands_with_named_inputs_skip_the_screen():
+    calls = []
+
+    def fn(ov):
+        calls.append(ov)
+        return linear_model(ov)
+    names = [INPUTS[0]["name"], INPUTS[2]["name"]]
+    b = uq.bands(fn, INPUTS, n=6, seed=1, metrics=("m1",), workers=1, top_names=names)
+    assert b["top"] == names and b["screen"] is None and len(calls) == 6
+    assert all(set(c) == {INPUTS[0]["path"], INPUTS[2]["path"]} for c in calls)
