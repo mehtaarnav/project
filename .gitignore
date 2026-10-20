@@ -2,6 +2,5 @@ __pycache__/
 *.pyc
 *.egg-info/
 .pytest_cache/
-examples/out/*.npz
 .claude/worktrees/
-examples/out/run.log
+runs/*/series.csv.gz

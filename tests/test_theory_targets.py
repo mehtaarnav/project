@@ -9,4 +9,4 @@ def test_targets_script():
     assert abs(vals["engage_rpm_kappa0.5"] - 1725.66) < 0.01
     assert abs(vals["negstiff_rpm_kappa0.5"] - 2262.57) < 0.01
     assert abs(vals["capstan_ratio_pi"] - 3.79189) < 1e-5
-    assert abs(vals["center_distance_C"] - 0.251495) < 1e-6
+    assert abs(vals["geo_x_p_stop"] - 0.0178192) < 1e-6

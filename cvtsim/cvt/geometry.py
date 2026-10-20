@@ -13,29 +13,31 @@ def belt_length(r1, r2, C):
     return 2.0 * C * np.cos(phi) + np.pi * (r1 + r2) + 2.0 * phi * (r2 - r1)
 
 
-def derive_geometry(beta, s_p, s_s, i_low, i_high):
-    """Derive belt-radius limits, centre distance C and belt length L.
+def _rs_closure(rp, L, C):
+    """Secondary pitch radius that closes the belt length L at primary radius rp (G1)."""
+    # belt_length is strictly increasing in r_s (dL/dr_s = pi + 2 phi > 0): unique root.
+    return brentq(lambda rs: belt_length(rp, rs, C) - L, 1e-6, rp + 0.999 * C,
+                  xtol=1e-15, rtol=1e-15, maxiter=500)
 
-    beta: sheave half-angle in radians (flank measured from the radial plane).
-    s_p, s_s: primary closing / secondary opening strokes [m].
-    i_low, i_high: ratio limits r_s/r_p at the low and high ends.
+
+def derive_geometry(beta, L, C, rp_min, rs_max, s_p, i_high):
+    """Operating geometry from measured hardware (05_cvt.md section 2).
+
+    beta: flank half-angle [rad]; L: belt pitch length; C: centre distance;
+    rp_min: primary minimum pitch radius (belt on the hub, sheave open);
+    rs_max: secondary maximum pitch radius (sheave fully closed);
+    s_p: primary mechanical stroke; i_high: overdrive ratio stop (r_s/r_p).
     """
     tb = np.tan(beta)
-    dp = s_p / (2.0 * tb)
-    ds = s_s / (2.0 * tb)
-    rp_min = (ds + i_high * dp) / (i_low - i_high)
-    rp_max = rp_min + dp
-    rs_max = i_low * rp_min
-    rs_min = i_high * rp_max
-
-    def f(C):
-        return belt_length(rp_min, rs_max, C) - belt_length(rp_max, rs_min, C)
-
-    lo = max(abs(rs_max - rp_min), abs(rs_min - rp_max)) * (1.0 + 1e-9)
-    C = brentq(f, lo, 1.0, xtol=1e-15, rtol=1e-15, maxiter=500)
-    L = belt_length(rp_min, rs_max, C)
-    return dict(rp_min=rp_min, rp_max=rp_max, rs_min=rs_min, rs_max=rs_max,
-                C=C, L=L, beta=beta, tan_beta=tb, delta_p=dp, delta_s=ds)
+    rs_low = _rs_closure(rp_min, L, C)
+    if rs_low > rs_max:
+        raise ValueError("belt too long for the secondary at low ratio")
+    rp_max = brentq(lambda rp: _rs_closure(rp, L, C) / rp - i_high,
+                    rp_min, rp_min + s_p / (2.0 * tb), xtol=1e-15, rtol=1e-15, maxiter=500)
+    rs_min = _rs_closure(rp_max, L, C)
+    return dict(rp_min=rp_min, rp_max=rp_max, rs_low=rs_low, rs_min=rs_min, rs_max=rs_max,
+                ratio_low=rs_low / rp_min, x_s0=2.0 * tb * (rs_max - rs_low),
+                x_p_stop=2.0 * tb * (rp_max - rp_min), C=C, L=L, beta=beta, tan_beta=tb)
 
 
 def r_star_primary(x_p, g):
@@ -50,16 +52,7 @@ def r_star_secondary(x_s, g):
 
 def secondary_radius_from_xp(x_p, g):
     """Secondary pitch radius r_s that keeps the belt length at L (G1)."""
-    rp = r_star_primary(x_p, g)
-    C, L = g["C"], g["L"]
-
-    def f(rs):
-        return belt_length(rp, rs, C) - L
-
-    # belt_length is strictly increasing in r_s (dL/dr_s = pi + 2 phi > 0), so the root is unique.
-    lo = max(1e-9, rp - 0.99 * C)
-    hi = rp + 0.99 * C
-    return brentq(f, lo, hi, xtol=1e-15, rtol=1e-15, maxiter=500)
+    return _rs_closure(r_star_primary(x_p, g), g["L"], g["C"])
 
 
 def ratio_from_xp(x_p, g):

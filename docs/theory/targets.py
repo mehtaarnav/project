@@ -36,23 +36,20 @@ kt, th0, rc, phi = 3.930, np.radians(30), 0.0381, np.radians(45)
 out["sec_torsion_axial_preload"] = kt*th0/(rc*np.tan(phi))
 out["sec_linear_preload_derived"] = 435.63 - out["sec_torsion_axial_preload"]
 out["sec_thrust_T20_x0"] = 435.63 + (20/2)/(rc*np.tan(phi))
-# geometry from ratio range, strokes, beta
-sp, ss = 25.48e-3, 24.48e-3
-dp, ds = sp/(2*np.tan(beta)), ss/(2*np.tan(beta))
-a = (ds + 0.8*dp)/(3-0.8)
-rp = (a, a+dp); rs = (3*a, 0.8*(a+dp))
-out.update(rp_min=rp[0], rp_max=rp[1], rs_max=rs[0], rs_min=rs[1])
+# geometry: measured hardware (05 sec 2), belt-length closure
 def Lbelt(r1, r2, C):
     ph = np.arcsin((r2-r1)/C)
     return 2*C*np.cos(ph) + np.pi*(r1+r2) + 2*ph*(r2-r1)
-out["note_Ldiff_vs_C_200mm"] = Lbelt(rp[0], rs[0], 0.2) - Lbelt(rp[1], rs[1], 0.2)
+Lb, Cc, b12 = 0.88009, 0.232, np.radians(12.0)
+rs_of = lambda r: brentq(lambda q: Lbelt(r, q, Cc) - Lb, 1e-6, r + 0.999*Cc)
+rp_lo = 0.0315; rs_lo = rs_of(rp_lo)
+rp_hi = brentq(lambda r: rs_of(r)/r - 0.8, rp_lo, 0.0914)
+out.update(geo_rs_low=rs_lo, geo_ratio_low=rs_lo/rp_lo, geo_rp_max=rp_hi, geo_rs_min=rs_of(rp_hi),
+           geo_x_p_stop=2*np.tan(b12)*(rp_hi - rp_lo), geo_x_s0=2*np.tan(b12)*(0.09703 - rs_lo),
+           geo_rp_at_ratio3=brentq(lambda r: rs_of(r)/r - 3.0, 0.02, 0.05))
 for k_, v in out.items():
     print(f"{k_:32s} {v:.6g}")
 
-# --- derived center distance: equal belt length at both ratio extremes
-Cc = brentq(lambda C: Lbelt(rp[0], rs[0], C) - Lbelt(rp[1], rs[1], C), 0.05, 2.0)
-print(f"{'center_distance_C':32s} {Cc:.6g}")
-print(f"{'belt_length_L':32s} {Lbelt(rp[0], rs[0], Cc):.6g}")
 # --- drivetrain steady state: T(w)=a-b*w, ratio R, G, rt, Crr, m, c_a
 a_, b_, R_, G_, rt_, Crr_, m_, ca_ = 40.0, 0.05, 1.0, 8.1, 0.2921, 0.015, 250.0, 0.5
 k_ = R_*G_/rt_  # w_e = k_ * v

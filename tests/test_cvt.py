@@ -23,10 +23,10 @@ def p():
     return load()
 
 
-def test_T5_1_derive_geometry_beta45():
-    g = derive_geometry(np.radians(45.0), 0.02548, 0.02448, 3.0, 0.8)
-    targets = dict(rp_min=0.0101964, rp_max=0.0229364, rs_max=0.0305891,
-                   rs_min=0.0183491, C=0.251495, L=0.632776)
+def test_T5_1_derive_geometry():
+    g = derive_geometry(np.radians(12.0), 0.88009, 0.232, 0.0315, 0.09703, 0.02548, 0.8)
+    targets = dict(rs_low=0.0953211, ratio_low=3.02607, rp_max=0.0734165,
+                   rs_min=0.0587332, x_p_stop=0.0178192, x_s0=0.000726494)
     for key, val in targets.items():
         assert g[key] == pytest.approx(val, rel=1e-5), key
 
@@ -110,5 +110,5 @@ def test_T5_9_energy_conservation_free_primary(p):
 
 def test_T5_10_ratio_limits(p):
     g = p["derived"]["geometry"]
-    assert ratio_from_xp(0.0, g) == pytest.approx(3.0, rel=1e-4)
-    assert ratio_from_xp(p["primary"]["stroke"], g) == pytest.approx(0.8, rel=1e-4)
+    assert ratio_from_xp(0.0, g) == pytest.approx(3.02607, rel=1e-4)
+    assert ratio_from_xp(g["x_p_stop"], g) == pytest.approx(0.8, rel=1e-4)

@@ -25,26 +25,34 @@ Derivation: two tangent spans of length `C cos φ`. Wrap angles are
 Sheave axial travel → free radius (04 §2, C1):
 `r*_p = r_p,min + x_p/(2 tan β)` and `r*_s = r_s,max − x_s/(2 tan β)`.
 
-Given ratio limits `i_low = 3.0`, `i_high = 0.8` (`i = r_s/r_p`), strokes
-`s_p`, `s_s`, and `Δ_p = s_p/(2tanβ)`, `Δ_s = s_s/(2tanβ)`:
+**Operating geometry (measured hardware).** Inputs: flank half-angle `β = 12°`,
+belt pitch length `L = 880.09 mm`, centre distance `C = 232 mm`, primary hub (minimum)
+pitch radius `r_p,min = 31.50 mm`, secondary maximum `r_s,max = 97.03 mm`, and the
+overdrive stop `i_high = 0.8`. The secondary radius follows from closure,
+`L(r_p, r_s(r_p), C) = L`. Since `∂L/∂r_s = π + 2φ > 0`, the root is unique.
 
-    r_s,max = 3.0 r_p,min,   r_s,min = 0.8 (r_p,min + Δ_p),   r_s,max − r_s,min = Δ_s
-    ⇒ r_p,min = (Δ_s + 0.8 Δ_p)/(3.0 − 0.8)
+* Low end: belt on the primary hub, `r_s = r_s(r_p,min)`. The secondary sits open by
+  `x_s0 = 2 tan β (r_s,max − r_s)`.
+* High end: primary closing travel stops where `r_s/r_p = 0.8`,
+  `x_p,stop = 2 tan β (r_p(0.8) − r_p,min)`. The full primary stroke (25.48 mm) would
+  reach about 0.49, limited by the secondary minimum radius 42.42 mm. 0.8 is therefore an imposed stop.
 
-C then comes from `L(r_p,min, r_s,max, C) = L(r_p,max, r_s,min, C)`.
-
-| Derived (β = 45°) | Value |
+| Derived (β = 12°) | Value |
 |---|---|
-| `r_p,min`, `r_p,max` | 10.1964 mm, 22.9364 mm |
-| `r_s,max`, `r_s,min` | 30.5891 mm, 18.3491 mm |
-| `C` | 251.495 mm |
-| `L` | 632.776 mm |
+| ratio at the hub, `r_s(r_p,min)/r_p,min` | 3.02607 (`r_s` = 95.3211 mm) |
+| `r_p` at ratio 3.0 | 31.7219 mm |
+| `r_p`, `r_s` at 0.8 | 73.4165 mm, 58.7332 mm |
+| `x_p,stop` | 17.8192 mm |
+| `x_s0` | 0.7265 mm; secondary travel to 0.8 = 16.28 mm |
 
-**DISCREPANCY (see README):** these radii are implausibly small. The cause is the
-45° half-angle combined with ~25 mm strokes. Either `β` or the strokes need
-confirming from CAD. The code derives geometry from YAML inputs, so correcting
-`beta` or the strokes there propagates automatically. Optional YAML overrides
-`r_p_min`, `C` exist and must be labeled with a source when used.
+**Consistency checks.** `2 tan 12° × (91.44 − 31.50) mm = 25.48 mm` equals the primary stroke.
+The secondary's measured radius range implies a 23.22 mm stroke against the 24.48 mm in the
+parameters (a 1.26 mm difference, flagged; operation uses only 16.28 mm). The geometry
+belongs to the A/B model belt BD52-2179-S. Entering the DR26 car's own belt and centres shifts
+the radii slightly but not `β` or the strokes.
+
+*History:* the original brief's 45° flank angle forced pitch radii of 10–31 mm and a
+slip-limited launch. Resolved with the measured 12°.
 
 ## 3. Primary (centrifugal, flyweights on straight ramps)
 
@@ -151,7 +159,7 @@ assumption (A5.4).
 | A5.7 | Frictionless hub bearing; engagement gap `g` = 2 mm placeholder | ? — `g` shifts the rpm at which torque first transmits |
 
 ## 7. Implementation contract (`cvtsim/cvt/`)
-* `geometry.py`: `belt_length(r1, r2, C)`, `derive_geometry(beta, s_p, s_s, i_low, i_high) -> dict(rp_min, rp_max, rs_min, rs_max, C, L)`,
+* `geometry.py`: `belt_length(r1, r2, C)`, `derive_geometry(beta, L, C, rp_min, rs_max, s_p, i_high) -> dict(rp_min, rp_max, rs_low, rs_min, rs_max, ratio_low, x_s0, x_p_stop, C, L)`,
   `r_star_primary(x_p, g)`, `r_star_secondary(x_s, g)`, `ratio_from_xp(x_p, g)` (belt-length closure, solves `r_s` from G1).
 * `primary.py`: `flyweight_axial_force(x_p, omega, p)`, `spring_force(x_p, p)`, `engagement_omega(p)`, `negative_stiffness_omega(p)`,
   `primary_mass(x_p, p) -> (J_rot, m_ax)`, `primary_coriolis_torque(x_p, xdot_p, omega, p)`.
@@ -161,7 +169,7 @@ assumption (A5.4).
 ## 8. NUMERIC TEST TARGETS (`tests/test_cvt.py`)
 | Test | Target | Tol |
 |---|---|---|
-| T5.1 `derive_geometry` (β=45°) | r_p,min 0.0101964, r_p,max 0.0229364, r_s,max 0.0305891, r_s,min 0.0183491, C 0.251495, L 0.632776 m | rel 1e-5 |
+| T5.1 `derive_geometry(12°, 0.88009, 0.232, 0.0315, 0.09703, 0.02548, 0.8)` | rs_low 0.0953211, ratio_low 3.02607, rp_max 0.0734165, rs_min 0.0587332, x_p_stop 0.0178192, x_s0 0.000726494 | rel 1e-5 |
 | T5.2 engagement rpm, κ = 0.5 (P3) | 1725.66 rpm | rel 1e-5 |
 | T5.3 engagement rpm, κ = 1 | 1220.23 rpm | rel 1e-5 |
 | T5.4 negative-stiffness onset κ=0.5 (P4) | 2262.57 rpm (brief: "about 2,260") | rel 1e-5 |
@@ -170,4 +178,4 @@ assumption (A5.4).
 | T5.7 `secondary_static_force(0, 20)` | 435.63 + 10/0.0381 = 698.097 N | rel 1e-5 |
 | T5.8 `secondary_static_force(0.01, 0)` | 381.621 + 33.5366 + 3.930·(0.5236+0.26247)/0.0381 = 496.235 N | rel 1e-4 |
 | T5.9 energy: flyweight-primary free system (P1–P2 with T_eng = 0, no belt, no damping, no stops, start x_p inside the stroke) integrated with rk4 1 s: `𝒯 + U` conserved | rel 1e-6 |
-| T5.10 `ratio_from_xp(0)` = 3.0, `ratio_from_xp(s_p)` = 0.8 | rel 1e-4 |
+| T5.10 `ratio_from_xp(0)` = 3.02607, `ratio_from_xp(x_p,stop)` = 0.8 | rel 1e-4 |

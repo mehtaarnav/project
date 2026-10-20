@@ -16,6 +16,7 @@ include = ["cvtsim*"]
 
 [tool.setuptools.package-data]
 "cvtsim.io" = ["*.yaml"]
+"cvtsim.viz" = ["fonts/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -47,18 +47,11 @@ forms only — run it to reproduce).
 
 ## Inconsistencies in the input data
 
-1. **Sheave angle vs. stroke vs. ratio range.** With the half-angle
-   `beta = 45°` (flank measured from the radial plane), axial travel `s` of one
-   sheave half changes the belt radius by `s/(2 tan beta)`. That is 12.74 mm
-   for the 25.48 mm primary stroke and 12.24 mm for the 24.48 mm secondary
-   stroke. Requiring ratio 3.0 at one end and 0.8 at the other then
-   *forces* `r_p` = 10.20 → 22.94 mm and `r_s` = 30.59 → 18.35 mm (05_cvt.md
-   §2). A 10 mm primary pitch radius is not physically realizable with a
-   CVTech-size belt. Either `beta` is not a 45° half-angle (a ~13° rubber-CVT
-   half-angle would give ~55 mm of radial travel), or the strokes are not
-   sheave strokes. The simulator follows the brief literally and flags this.
-   Absolute belt tensions and shaft loads scale roughly with `1/r`, so treat
-   them as uncertain by a factor of ~2–3 until this is resolved.
+1. **Sheave angle (resolved).** The brief's 45° half-angle forced pitch radii of 10–31 mm.
+   The measured 12° (Messick 2018 Fig 4.8; stock primary 11.64°) reproduces the measured
+   59.94 mm primary radius range from the 25.48 mm stroke exactly, and is now used. One residual
+   mismatch remains: the secondary stroke implied by the measured radii is 23.22 mm vs 24.48 mm
+   in the parameters (05_cvt.md §2).
 2. **Flyweight kinematic ratio.** A weight guided radially against one 45°
    ramp has `kappa = dr_w/dx_p = 1/tan(alpha) = 1`. That predicts engagement
    at 1220 rpm and negative net primary stiffness above 1131 rpm. The brief

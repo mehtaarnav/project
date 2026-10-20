@@ -45,8 +45,10 @@ def load(path=DEFAULT, overrides=None):
             d[parts[-1]] = val
     from cvtsim.cvt.geometry import derive_geometry
     beta = np.radians(p["sheave"]["beta_deg"])
-    g = derive_geometry(beta, p["primary"]["stroke"], p["secondary"]["stroke"],
-                        p["ratio"]["low"], p["ratio"]["high"])
+    gm = p["geometry"]
+    g = derive_geometry(beta, gm["belt_pitch_length"], gm["center_distance"],
+                        gm["rp_mech_min"], gm["rs_mech_max"], p["primary"]["stroke"],
+                        p["ratio"]["high"])
     s = p["secondary"]
     p_h = s["r_cam"] * np.tan(np.radians(s["cam_angle_deg"]))
     th0 = np.radians(s["torsion_preload_deg"])

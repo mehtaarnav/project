@@ -80,7 +80,7 @@ With `μ = 0.3`, `β = 45°`, `θ = π`: `T1/T2 = 3.79189`.
 ## 4. Symbols
 | Symbol | Meaning | Unit | DR26 |
 |---|---|---|---|
-| `β` | flank half-angle from radial plane | rad | 45° (brief; CAD shows ≈43.3° on some faces — DISCREPANCY flagged) |
+| `β` | flank half-angle from radial plane | rad | 12° measured (stock primary 11.64°). Unit tests use 45° as a generic closed-form case |
 | `μ` | belt–sheave friction | – | 0.3 (brief, assumed) |
 | `k_n` | flank normal stiffness per node | N/m | from (B1) |
 | `c_n` | flank normal damping per node | N·s/m | PLACEHOLDER: `2·0.05·sqrt(k_n m_node)` (5 % critical) |

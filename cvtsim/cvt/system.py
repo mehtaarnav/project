@@ -192,7 +192,7 @@ def build(p, dt=None, kn_scale=1.0):
     beta = p["derived"]["beta"]
     b, pr, se, eng, veh = p["belt"], p["primary"], p["secondary"], p["engine"], p["vehicle"]
     N = int(p["sim"]["belt_nodes"])
-    X, L0 = init_belt_on_path(g["rp_min"], g["rs_max"], g["C"], N)
+    X, L0 = init_belt_on_path(g["rp_min"], g["rs_low"], g["C"], N)
     X = np.ascontiguousarray(X, dtype=np.float64)
     # stress-free rest length = mean initial chord
     d = np.roll(X, -1, axis=0) - X
@@ -207,9 +207,9 @@ def build(p, dt=None, kn_scale=1.0):
     J_s = se["J_shaft"] + veh["mass"] * veh["tire_radius"] ** 2 / veh["final_drive"] ** 2
     prm = np.array([
         m_node, L0, b["EA"], b["eta"], b["EI"], 0.0, beta, k_n, c_n, b["mu"], b["v_eps"],
-        g["rp_min"], g["rs_max"], g["C"], g["rp_max"] + margin, g["rs_max"] + margin,
+        g["rp_min"], g["rs_max"], g["C"], p["geometry"]["rp_mech_max"] + margin, g["rs_max"] + margin,
         eng["J_e"], pr["n_weights"], p["derived"]["m_w"], pr["r_w0"], pr["kappa"],
-        pr["k_spring"], pr["F_preload"], pr["m_axial"], pr["c_axial"], pr["stroke"],
+        pr["k_spring"], pr["F_preload"], pr["m_axial"], pr["c_axial"], g["x_p_stop"],
         J_s, se["J_movable"], se["m_axial"], p["derived"]["p_h"], -1.0,
         se["k_linear"], p["derived"]["F_l0"], se["k_torsion"], p["derived"]["theta_t0"],
         se["c_axial"], se["stroke"],
@@ -217,7 +217,7 @@ def build(p, dt=None, kn_scale=1.0):
         veh["mass"], veh["tire_radius"], veh["final_drive"], veh["Crr"], 0.05, eng["rpm_cut"],
         pr["engagement_gap"], k_n],
         dtype=np.float64)
-    st = np.array([eng["idle_rpm"] * np.pi / 30, -pr["engagement_gap"], 0.0, 0.0, 0.0, 0.0, 0.0])
+    st = np.array([eng["idle_rpm"] * np.pi / 30, -pr["engagement_gap"], 0.0, 0.0, g["x_s0"], 0.0, 0.0])
     return dict(X=X, V=np.zeros_like(X), st=st, prm=prm,
                 eng_w=np.asarray(eng["rpm"], float), eng_T=np.asarray(eng["torque"], float),
                 h=float(dt or p["sim"]["dt"]), p=p)
