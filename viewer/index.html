@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CVT Mechanism Viewer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">
+    <span class="dot"></span>
+    <h1>CVT<span class="sub">MECHANISM</span></h1>
+  </div>
+  <div class="transport">
+    <button id="btn-prev" title="Step back (Left)">&#9664;&#9664;</button>
+    <button id="btn-play" title="Play / pause (Space)">PLAY</button>
+    <button id="btn-next" title="Step forward (Right)">&#9654;&#9654;</button>
+    <input id="scrub" type="range" min="0" max="10000" value="0" aria-label="time">
+    <select id="speed" aria-label="speed">
+      <option value="0.1">0.1x</option><option value="0.25">0.25x</option>
+      <option value="0.5">0.5x</option><option value="1" selected>1x</option>
+      <option value="2">2x</option><option value="4">4x</option>
+    </select>
+    <span id="tread" class="tread">t 0.0000 s</span>
+  </div>
+  <div class="meta" id="meta">no run loaded</div>
+</header>
+
+<section id="readouts"></section>
+
+<main>
+  <div class="row top">
+    <div class="panel wide">
+      <div class="ptitle">SIDE VIEW <i>belt plane, tension colour</i></div>
+      <canvas id="cv-side"></canvas>
+    </div>
+    <div class="panel">
+      <div class="ptitle">PRIMARY <i>axial cut</i></div>
+      <canvas id="cv-pri"></canvas>
+    </div>
+    <div class="panel">
+      <div class="ptitle">SECONDARY <i>axial cut</i></div>
+      <canvas id="cv-sec"></canvas>
+    </div>
+  </div>
+  <div id="plots"></div>
+</main>
+
+<div id="msg" class="msg">Drop a viewer.json here, or open with <code>?run=path/to/viewer.json</code></div>
+
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
+<script src="viewer.js"></script>
+</body>
+</html>
