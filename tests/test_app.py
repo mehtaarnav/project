@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from cvtsim import app
 from cvtsim.io.params import SLOTS, load
 
-FORM = dict(app.DEFAULTS, shim_mm="0", hole_deg="30", t_end="8", label="pytest-default")
+FORM = dict(app.DEFAULTS, shim_mm="0", hole_deg="30", t_end="8", label="pytest-default", scenario="hill_climb")
 
 
 def _flat(d, pre=""):
@@ -64,5 +64,6 @@ def test_post_launches_a_run(tmp_path, monkeypatch):
         assert r.status == 200 and "pytest-default: running" in r.read().decode()
         assert seen["cmd"][4:6] == ["cvtsim.tune", "run"] and seen["cmd"][6].endswith("pytest-default.yaml")
         assert (tmp_path / "pytest-default.yaml").exists()
+        assert seen["cmd"][7:9] == ["--scenario", "hill_climb"]
     finally:
         srv.shutdown()

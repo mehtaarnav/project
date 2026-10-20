@@ -20,7 +20,7 @@ from urllib.parse import parse_qs
 
 import yaml
 
-from cvtsim.io.params import COMPONENTS, SLOTS, load_raw
+from cvtsim.io.params import COMPONENTS, SLOTS, load_raw, load_scenario, scenario_names
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL = ROOT / "local_tunes"
@@ -63,7 +63,10 @@ def write_tune(form):
 
 def launch(form):
     path = write_tune(form)
-    cmd = [sys.executable, "-W", "ignore", "-m", "cvtsim.tune", "run", str(path), "--t-end", str(float(form["t_end"]))]
+    cmd = [sys.executable, "-W", "ignore", "-m", "cvtsim.tune", "run", str(path),
+           "--scenario", form.get("scenario", "launch")]
+    if form.get("t_end"):
+        cmd += ["--t-end", str(float(form["t_end"]))]
     log = open(LOCAL / f"{path.stem}.log", "w")
     JOBS[path.stem] = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
     return path.stem
@@ -72,6 +75,8 @@ def launch(form):
 def recent_runs(n=15):
     out = []
     for d in sorted(RUNS.glob("*-tune-*"), reverse=True)[:n]:
+        if "compare" in d.name:
+            continue
         try:
             m = json.loads((d / "metrics.json").read_text())
         except (OSError, ValueError):
@@ -90,6 +95,7 @@ def page():
     ps = parts()
     rows = "".join(f"<label>{LABELS[s]}{_select(s, ps[s], DEFAULTS[s])}</label>" for s in SLOTS)
     holes = torsion_holes(DEFAULTS["torsion_spring"])
+    scen = _select("scenario", [(n, load_scenario(n)["description"]) for n in scenario_names()], "launch")
     hole = _select("hole_deg", [(f"{h:g}", "") for h in holes], f"{holes[0]:g}")
     jobs = "".join(f"<li>{html.escape(k)}: {'running' if p.poll() is None else 'exit ' + str(p.returncode)}</li>"
                    for k, p in JOBS.items())
@@ -115,7 +121,8 @@ td:first-child,th:first-child{{text-align:left}}
 <form method="post" action="/run">{rows}
 <label>Torsion hole (deg){hole}</label>
 <label>Primary shim (mm)<input name="shim_mm" type="number" step="0.1" value="0"></label>
-<label>Launch length (s)<input name="t_end" type="number" step="0.5" min="0.5" value="8"></label>
+<label>Scenario{scen}</label>
+<label>Length (s, blank = scenario default)<input name="t_end" type="number" step="0.5" min="0.5" value=""></label>
 <label>Run label<input name="label" value="custom"></label>
 <div><button type="submit">Run launch</button></div></form>
 <p>A launch of 8 s takes about 30 minutes. Hover an option for its description.</p>

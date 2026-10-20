@@ -1,0 +1,8 @@
+description: "Launch on level ground, then a 20 deg climb from 2 s at full throttle. The CVT backshifts under load."
+t_end: 8.0
+notes: "20 deg is a reporting choice, not a measured course grade. Edit the grade column for your course."
+knots:
+  - [0.0, 1.0, 0.0, 1.0]
+  - [2.0, 1.0, 0.0, 1.0]
+  - [3.0, 1.0, 20.0, 1.0]
+  - [8.0, 1.0, 20.0, 1.0]

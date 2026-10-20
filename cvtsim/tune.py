@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 
 from cvtsim import runs
-from cvtsim.io.params import component, load, load_raw, load_tune_raw, tune_names
+from cvtsim.io.params import DEFAULT, component, load, load_raw, load_scenario, load_tune_raw, scenario_names, tune_names
 from cvtsim.cvt.system import build, relax, simulate, CH
 
 METRIC_KEYS = ("engage_rpm", "t_shift_s", "v_end_kmh", "dist_m", "rpm_end", "x_s_end",
@@ -57,16 +57,23 @@ def metrics(res, p):
                 energy_resid=np.max(np.abs((E - E[0]) - (Win - Wd))) / max(Win[-1], 1e-12))
 
 
-def run_tune(name, t_end, surface=None, dt=None, nout=None, n_frames=400, dashboard=True):
-    """Simulate one tune as a tracked run. Returns (p, res, snaps, run, metrics)."""
+def run_tune(name, t_end=None, surface=None, dt=None, nout=None, n_frames=400, dashboard=True, scenario=None,
+             car=None):
+    """Simulate one tune in one scenario (default: launch) as a tracked run.
+
+    t_end defaults to the scenario's t_end. Returns (p, res, snaps, run, metrics).
+    """
+    sc = load_scenario(scenario) if scenario else None
+    car = car or DEFAULT
+    t_end = t_end or (sc["t_end"] if sc else load(car)["sim"]["t_end"])
     nout = nout or out_samples(t_end)
     overrides = {f"vehicle.{k}": v for k, v in component("vehicle_surfaces", surface).items()} if surface else {}
-    p = load(tune=name, overrides=overrides)
-    model = build(p, dt=dt)
+    p = load(car, tune=name, overrides=overrides)
+    model = build(p, dt=dt, scenario=sc)
     relax(model)
     res, snaps = simulate(model, t_end, nout=nout, n_frames=n_frames)
-    cfg = dict(base=load_raw(), **load_tune_raw(name))
-    run = runs.Run(f"tune-{Path(name).stem}" + (f"-{surface}" if surface else ""), cfg,
+    cfg = dict(base=load_raw(car), car=str(car), **load_tune_raw(name), scenario=sc)
+    run = runs.Run(f"tune-{Path(name).stem}" + (f"-{sc['name']}" if sc else "") + (f"-{surface}" if surface else ""), cfg,
                    overrides=dict(overrides, dt=model["h"], t_end=t_end), group="tune", tags=(name,))
     run.series(CH, res)
     np.savez_compressed(run.dir / "snaps.npz", **snaps)
@@ -119,6 +126,8 @@ def table(rows, ref):
 
 def compare(names, t_end, surface=None, **kw):
     """Run each tune (first is the reference) and write a summary run with a markdown table."""
+    sc = kw.get("scenario")
+    t_end = t_end or (load_scenario(sc)["t_end"] if sc else load(kw.get("car") or DEFAULT)["sim"]["t_end"])
     cases, rows = [], []
     for name in names:
         _, res, _, run, m = run_tune(name, t_end, surface=surface, **kw)
@@ -151,21 +160,24 @@ def main(argv=None):
         sp.add_argument("tunes", nargs="+" if cmd == "compare" else 1)
         sp.add_argument("--t-end", type=float, default=None)
         sp.add_argument("--surface", default=None)
+        sp.add_argument("--car", default=None, help="vehicle parameter file (default: cvtsim/io/dr26_default.yaml)")
+        sp.add_argument("--scenario", default=None, help="launch, hill_climb, backshift, landing (cvtsim/io/scenarios)")
         sp.add_argument("--dt", type=float, default=None)
         sp.add_argument("--nout", type=int, default=None, help="output samples (default: 4 kHz, the 12 sec 7.6 rule)")
         sp.add_argument("--frames", type=int, default=400)
     a = ap.parse_args(argv)
     if a.cmd == "list":
-        print("\n".join(tune_names()))
+        print("tunes:", " ".join(tune_names()))
+        print("scenarios:", " ".join(scenario_names()))
         return
-    t_end = a.t_end or load()["sim"]["t_end"]
+    t_end = a.t_end
     kw = dict(dt=a.dt, nout=a.nout, n_frames=a.frames)
     if a.cmd == "run":
-        _, _, _, run, m = run_tune(a.tunes[0], t_end, surface=a.surface, **kw)
+        _, _, _, run, m = run_tune(a.tunes[0], t_end, surface=a.surface, scenario=a.scenario, car=a.car, **kw)
         runs.write_index()
         print(run.dir, {k: float(f"{m[k]:.4g}") for k in METRIC_KEYS})
     else:
-        print(compare(a.tunes, t_end, surface=a.surface, **kw))
+        print(compare(a.tunes, t_end, surface=a.surface, scenario=a.scenario, car=a.car, **kw))
 
 
 if __name__ == "__main__":

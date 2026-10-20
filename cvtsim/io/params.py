@@ -53,6 +53,22 @@ def tune_path(tune):
     return p if p.suffix in (".yaml", ".yml") and p.exists() else TUNING / "tunes" / f"{tune}.yaml"
 
 
+SCENARIOS = pathlib.Path(__file__).with_name("scenarios")
+
+
+def scenario_names():
+    return sorted(q.stem for q in SCENARIOS.glob("*.yaml"))
+
+
+def load_scenario(name):
+    """Scenario file (cvtsim/io/scenarios/<name>.yaml or a path) as a plain dict."""
+    q = pathlib.Path(name)
+    q = q if q.suffix in (".yaml", ".yml") and q.exists() else SCENARIOS / f"{name}.yaml"
+    d = load_raw(q)
+    d["name"] = q.stem
+    return d
+
+
 def tune_names():
     return sorted(q.stem for q in (TUNING / "tunes").glob("*.yaml"))
 

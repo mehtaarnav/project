@@ -1,0 +1,6 @@
+description: "Full-throttle launch from rest on level ground (the acceleration event)."
+t_end: 8.0
+# rows: [t (s), throttle (0-1), grade (deg, uphill positive), traction factor (1 = level ground load)]
+knots:
+  - [0.0, 1.0, 0.0, 1.0]
+  - [8.0, 1.0, 0.0, 1.0]
