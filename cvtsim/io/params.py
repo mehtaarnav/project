@@ -1,10 +1,25 @@
 """Parameter loading. YAML entries are {value:..., source:...}; `load()` returns a
-flat-ish dict of plain values plus derived quantities, keeping sources separately."""
+flat-ish dict of plain values plus derived quantities, keeping sources separately.
+
+A tune (docs/theory/09 section 5) selects named parts from `tuning/components.yaml` and
+adds scalar adjustments; `load(tune=...)` merges it over the base file before overrides."""
 import pathlib
 import numpy as np
 import yaml
 
 DEFAULT = pathlib.Path(__file__).with_name("dr26_default.yaml")
+TUNING = pathlib.Path(__file__).with_name("tuning")
+COMPONENTS = TUNING / "components.yaml"
+
+# tune slot -> (components.yaml section, parameter section it fills)
+SLOTS = {"primary_spring": ("primary_springs", "primary"),
+         "flyweights": ("flyweights", "primary"),
+         "ramp": ("ramps", "primary"),
+         "secondary_spring": ("secondary_springs", "secondary"),
+         "torsion_spring": ("torsion_springs", "secondary"),
+         "helix": ("helixes", "secondary"),
+         "surface": ("vehicle_surfaces", "vehicle")}
+_SECONDARY_PRELOAD = ("F_preload_equiv", "F_preload_linear", "equiv_reference")
 
 
 def _num(x):
@@ -23,7 +38,7 @@ def _strip(node):
     if isinstance(node, dict):
         if "value" in node:
             return _num(node["value"])
-        return {k: _strip(v) for k, v in node.items() if k not in ("source", "unit", "note")}
+        return {k: _strip(v) for k, v in node.items() if k not in ("source", "unit", "note", "description")}
     return _num(node)
 
 
@@ -32,10 +47,70 @@ def load_raw(path=DEFAULT):
         return yaml.safe_load(f)
 
 
-def load(path=DEFAULT, overrides=None):
-    """Plain-valued parameter dict with derived entries under p['derived']."""
+def tune_path(tune):
+    """Tune name (file in tuning/tunes/) or path to a tune YAML."""
+    p = pathlib.Path(tune)
+    return p if p.suffix in (".yaml", ".yml") and p.exists() else TUNING / "tunes" / f"{tune}.yaml"
+
+
+def tune_names():
+    return sorted(q.stem for q in (TUNING / "tunes").glob("*.yaml"))
+
+
+def component(section, name):
+    """Plain values of one part in components.yaml, e.g. component("vehicle_surfaces", "dirt")."""
+    return _strip(load_raw(COMPONENTS)[section][name])
+
+
+def load_tune_raw(tune):
+    """The tune file plus the raw (sourced) entries of the parts it selects, for run configs."""
+    t = load_raw(tune_path(tune))
+    comps = load_raw(COMPONENTS)
+    parts = {slot: {name: comps[SLOTS[slot][0]][name]} for slot, name in t["components"].items()}
+    return dict(tune=t, parts=parts)
+
+
+def _apply_tune(p, tune):
+    tr = load_tune_raw(tune)
+    t = tr["tune"]
+    for slot, part in tr["parts"].items():
+        if slot not in SLOTS:
+            raise KeyError(f"unknown tune slot {slot!r}")
+        (name, entry), = part.items()
+        vals = _strip(entry)
+        sec = p[SLOTS[slot][1]]
+        if slot == "ramp":
+            sec["ramp"] = vals
+        elif slot == "helix":
+            sec["helix"] = vals
+            sec["r_cam"] = vals["r_cam"]
+            sec["cam_angle_deg"] = vals["angles"][0][1]
+        else:
+            if slot == "secondary_spring":
+                for key in _SECONDARY_PRELOAD:
+                    sec.pop(key, None)
+            sec.update(vals)
+    adj = _strip(t.get("adjust", {}))
+    if "primary_shim" in adj:
+        p["primary"]["shim"] = adj.pop("primary_shim")
+    if "torsion_hole_deg" in adj:
+        p["secondary"]["torsion_preload_deg"] = adj.pop("torsion_hole_deg")
+    if adj:
+        raise KeyError(f"unknown tune adjustments {sorted(adj)}")
+    for sec in ("engine", "vehicle", "belt", "sim"):
+        p[sec].update(_strip(t.get(sec, {})))
+    p["tune"] = dict(name=pathlib.Path(tune).stem, components=dict(t["components"]))
+
+
+def load(path=DEFAULT, overrides=None, tune=None):
+    """Plain-valued parameter dict with derived entries under p['derived'].
+
+    tune: name in tuning/tunes/ (or a path); its parts are merged before `overrides`.
+    """
     raw = load_raw(path)
     p = _strip(raw)
+    if tune is not None:
+        _apply_tune(p, tune)
     if overrides:
         for key, val in overrides.items():
             d = p
@@ -44,16 +119,46 @@ def load(path=DEFAULT, overrides=None):
                 d = d[part]
             d[parts[-1]] = val
     from cvtsim.cvt.geometry import derive_geometry
+    from cvtsim.cvt.profiles import Ramp, Helix
     beta = np.radians(p["sheave"]["beta_deg"])
     gm = p["geometry"]
     g = derive_geometry(beta, gm["belt_pitch_length"], gm["center_distance"],
                         gm["rp_mech_min"], gm["rs_mech_max"], p["primary"]["stroke"],
                         p["ratio"]["high"])
-    s = p["secondary"]
+    pr, s = p["primary"], p["secondary"]
+    # primary: shim offset adds k_p * shim to the preload (09 section 1)
+    shim = pr.get("shim", 0.0)
+    if shim:
+        pr["F_preload_spring"] = pr["F_preload"]
+        pr["F_preload"] = pr["F_preload"] + pr["k_spring"] * shim
+    u_max = pr["engagement_gap"] + pr["stroke"]
+    ramp = Ramp.from_spec(pr["ramp"], u_max) if "ramp" in pr else Ramp.straight(pr["r_w0"], pr["kappa"], u_max)
+    if "ramp" in pr:  # static 05 functions read the ramp at full open
+        pr["r_w0"], pr["kappa"] = float(ramp(0.0)[0]), float(ramp(0.0)[1])
+    # secondary
+    if "torsion_holes_deg" in s and s["torsion_preload_deg"] not in s["torsion_holes_deg"]:
+        raise ValueError(f"torsion pretwist {s['torsion_preload_deg']} deg is not a hole position {s['torsion_holes_deg']}")
+    if "helix" in s:
+        helix = Helix.from_spec(s["helix"], s["stroke"])
+    else:
+        helix = Helix.from_angles(s["r_cam"], [0.0], [s["cam_angle_deg"]], s["stroke"])
     p_h = s["r_cam"] * np.tan(np.radians(s["cam_angle_deg"]))
     th0 = np.radians(s["torsion_preload_deg"])
     F_t0 = s["k_torsion"] * th0 / p_h
+    if "F_preload_linear" in s:
+        F_l0 = s["F_preload_linear"]
+    else:
+        # brief convention: the equivalent preload includes the torsion share at a reference set-up
+        ref = s.get("equiv_reference", s)
+        F_l0 = s["F_preload_equiv"] - ref["k_torsion"] * np.radians(ref["torsion_preload_deg"]) / (
+            ref["r_cam"] * np.tan(np.radians(ref["cam_angle_deg"])))
+    b = p["belt"]
+    m_belt = b["rho"] * b["area"] * gm["belt_pitch_length"]
+    hA = b["h_conv"] * gm["belt_pitch_length"] * (b["top_width"] + 2.0 * b["flank_height"])
+    thermal = dict(m_belt=m_belt, C_b=m_belt * b["c_p"], hA=hA, tau=m_belt * b["c_p"] / hA,
+                   T_amb=b["T_amb_C"] + 273.15)
     p["derived"] = dict(geometry=g, beta=beta, p_h=p_h, theta_t0=th0,
-                        F_torsion0=F_t0, F_l0=s["F_preload_equiv"] - F_t0,
-                        m_w=p["primary"]["m_weight"] + p["primary"]["m_cover"])
+                        F_torsion0=F_t0, F_l0=F_l0,
+                        m_w=pr["m_weight"] + pr["m_cover"], ramp=ramp, helix=helix,
+                        belt_thermal=thermal)
     return p

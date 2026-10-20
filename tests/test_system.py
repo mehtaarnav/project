@@ -9,7 +9,7 @@ from cvtsim.cvt.system import build, relax, simulate, CH
 def _run(t_end, **kw):
     m = build(load(), **kw)
     relax(m)
-    return simulate(m, t_end, nout=200)
+    return simulate(m, t_end, nout=200)[0]
 
 
 @pytest.fixture(scope="module")

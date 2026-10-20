@@ -15,7 +15,7 @@ build-backend = "setuptools.build_meta"
 include = ["cvtsim*"]
 
 [tool.setuptools.package-data]
-"cvtsim.io" = ["*.yaml"]
+"cvtsim.io" = ["*.yaml", "tuning/*.yaml", "tuning/tunes/*.yaml"]
 "cvtsim.viz" = ["fonts/*"]
 
 [tool.pytest.ini_options]

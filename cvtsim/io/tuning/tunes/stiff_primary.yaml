@@ -1,0 +1,14 @@
+description: "ILLUSTRATIVE: default with a stiffer primary spring rate (16000 N/m, not a catalogue part)."
+components:
+  primary_spring: stiff_illustrative
+  flyweights: brief
+  ramp: straight_45
+  secondary_spring: brief
+  torsion_spring: brief
+  helix: straight_45
+  surface: brief
+adjust:
+  primary_shim: {value: 0.0, unit: m, source: "no shim"}
+  torsion_hole_deg: {value: 30.0, source: BRIEF}
+vehicle:
+  CdA: {value: 0.9, unit: m^2, source: "ASSUMED range 0.8-1.2 (09 sec 3)"}

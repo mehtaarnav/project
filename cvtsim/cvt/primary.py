@@ -53,3 +53,23 @@ def primary_coriolis_torque(x_p, xdot_p, omega, p):
     """
     n, m_w, kap, _ = _pp(p)
     return 2.0 * n * m_w * flyweight_radius(x_p, p) * kap * xdot_p * omega
+
+
+def flyweight_force_profile(u, omega, p):
+    """Static flyweight force F_fw(u, omega) = n m_w r_w(u) kappa(u) omega^2 with the ramp
+    profile (09 section 1); u is travel from full open."""
+    r_w, kap, _ = p["derived"]["ramp"](u)
+    return p["primary"]["n_weights"] * p["derived"]["m_w"] * r_w * kap * omega ** 2
+
+
+def engagement_omega_profile(p):
+    """Static engagement speed [rad/s] from F_fw(0, omega) = F_p0 with the ramp profile."""
+    return np.sqrt(p["primary"]["F_preload"] / flyweight_force_profile(0.0, 1.0, p))
+
+
+def negative_stiffness_omega_profile(u, p):
+    """Speed [rad/s] above which k_p - dF_fw/du < 0 at travel u, with
+    dF_fw/du = n m_w (kappa^2 + r_w kappa') omega^2."""
+    r_w, kap, dkap = p["derived"]["ramp"](u)
+    n, m_w = p["primary"]["n_weights"], p["derived"]["m_w"]
+    return np.sqrt(p["primary"]["k_spring"] / (n * m_w * (kap * kap + r_w * dkap)))

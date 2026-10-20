@@ -24,7 +24,7 @@ def col(res, k):
 def metrics_of(res, p, sh=None):
     t = col(res, "t")
     rpm = col(res, "w_e") * 30 / np.pi
-    v = col(res, "w_s") * p["vehicle"]["tire_radius"] / p["vehicle"]["final_drive"]
+    v = col(res, "v")
     E, Win, Wd = col(res, "E_mech"), col(res, "W_in"), col(res, "W_diss")
     x_stop = p["derived"]["geometry"]["x_p_stop"]
     shifted = col(res, "x_p") > 0.95 * x_stop
@@ -46,7 +46,7 @@ def simulate_run(name, t_end, overrides=None, dt=None, kn_scale=1.0, group="", n
     p = load(overrides=overrides)
     model = build(p, dt=dt, kn_scale=kn_scale)
     relax(model)
-    res = simulate(model, t_end, nout=nout)
+    res, _ = simulate(model, t_end, nout=nout)
     run = runs.Run(name, load_raw(), overrides=dict(overrides or {}, dt=model["h"], kn_scale=kn_scale),
                    group=group)
     run.series(CH, res)

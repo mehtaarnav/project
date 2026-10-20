@@ -15,6 +15,7 @@ forms only — run it to reproduce).
 | [06_drivetrain.md](06_drivetrain.md) | engine, vehicle, road load | `cvtsim.drivetrain` |
 | [07_shafts.md](07_shafts.md) | Timoshenko shafts, bearings, stress | `cvtsim.fe.shaft` |
 | [08_fe_tet10.md](08_fe_tet10.md) | linear static 10-node tet FE | `cvtsim.fe.tet10` |
+| [09_tuning_vehicle_belt.md](09_tuning_vehicle_belt.md) | profiled ramp/helix, tire vehicle, belt heating, tunes | `cvtsim.cvt.profiles`, `cvtsim.cvt.system`, `cvtsim.tune` |
 | [literature.md](literature.md) | literature review + verification status | — |
 
 ## Global conventions (all modules)
