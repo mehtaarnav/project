@@ -1,0 +1,93 @@
+# DR26 Baja CVT default parameters. Every value carries a source note.
+# Status tags: BRIEF (given in BRIEF.md), DERIVED (docs/theory), ASSUMED (brief says assumed),
+# UNVERIFIED (given but unconfirmed), PLACEHOLDER (not supplied; replace from CAD/measurement).
+
+engine:
+  rpm:    {value: [2400, 2600, 2800, 3000, 3200, 3400, 3600], source: "BRIEF Kohler CH440 team-restricted chart"}
+  torque: {value: [25.08, 24.54, 23.59, 22.51, 20.88, 19.66, 18.30], unit: N*m, source: "BRIEF; below 2400 rpm UNVERIFIED -> held constant (06 A6.1)"}
+  rpm_cut: {value: 3800, unit: rpm, source: "ASSUMED governor ramp-to-zero 3600->3800 (06 A6.2)"}
+  J_e: {value: 0.05, unit: kg*m^2, source: "PLACEHOLDER engine+flywheel+fixed primary inertia"}
+  idle_rpm: {value: 1500, unit: rpm, source: "PLACEHOLDER initial speed below derived engagement (1725.7 rpm)"}
+
+ratio:
+  low:  {value: 3.0, source: "BRIEF"}
+  high: {value: 0.8, source: "BRIEF (not CVTech 0.43)"}
+
+primary:
+  k_spring: {value: 13208.0, unit: N/m, source: BRIEF}
+  F_preload: {value: 683.04, unit: N, source: BRIEF}
+  n_weights: {value: 3, source: BRIEF}
+  m_weight: {value: 0.275, unit: kg, source: BRIEF}
+  m_cover:  {value: 0.0387, unit: kg, source: "BRIEF (per weight, moves with weight)"}
+  r_w0: {value: 0.04445, unit: m, source: BRIEF}
+  ramp_angle_deg: {value: 45.0, source: "BRIEF straight-ramp assumption"}
+  kappa: {value: 0.5, source: "DERIVED 1/(2 tan 45deg), double-face wedge; reproduces brief's ~2260 rpm; UNVERIFIED vs CAD (05 sec 3)"}
+  stroke: {value: 0.02548, unit: m, source: BRIEF}
+  m_axial: {value: 0.8, unit: kg, source: "PLACEHOLDER movable half + spider axial mass"}
+  c_axial: {value: 10.0, unit: N*s/m, source: "ASSUMED (brief); sensitivity run"}
+
+secondary:
+  k_linear: {value: 3353.66, unit: N/m, source: BRIEF}
+  F_preload_equiv: {value: 435.63, unit: N, source: "BRIEF equivalent preload (assumed to include torsion share, 05 A5.4)"}
+  k_torsion: {value: 3.930, unit: N*m/rad, source: BRIEF}
+  torsion_preload_deg: {value: 30.0, source: BRIEF}
+  r_cam: {value: 0.0381, unit: m, source: BRIEF}
+  cam_angle_deg: {value: 45.0, source: BRIEF}
+  stroke: {value: 0.02448, unit: m, source: BRIEF}
+  m_axial: {value: 0.8, unit: kg, source: "PLACEHOLDER movable half axial mass"}
+  J_movable: {value: 1.5e-3, unit: kg*m^2, source: "PLACEHOLDER movable half polar inertia"}
+  J_shaft: {value: 2.0e-3, unit: kg*m^2, source: "PLACEHOLDER shaft + fixed half polar inertia"}
+  c_axial: {value: 10.0, unit: N*s/m, source: "ASSUMED (brief); sensitivity run"}
+
+sheave:
+  beta_deg: {value: 45.0, source: "BRIEF as modeled; CAD shows ~43.3 deg on some faces -> DISCREPANCY; see docs/theory/README"}
+  r_outer_margin: {value: 0.005, unit: m, source: "PLACEHOLDER outer radius = max free radius + margin"}
+  stop_k: {value: 1.0e7, unit: N/m, source: "ASSUMED stop penalty (05 A5.6)"}
+
+belt:
+  name: {value: "CVTech BD52-2172-S proxy", source: BRIEF}
+  G_hot: {value: 30.15e6, unit: Pa, source: "BRIEF / Messick 2018 thesis (UNVERIFIED), small strain"}
+  G_cold: {value: 46.71e6, unit: Pa, source: "BRIEF / Messick 2018 thesis (UNVERIFIED)"}
+  rho: {value: 1150.0, unit: kg/m^3, source: "ASSUMED (brief)"}
+  EA: {value: 243.5e3, unit: N, source: "BRIEF (UNVERIFIED)"}
+  area: {value: 3.0e-4, unit: m^2, source: "PLACEHOLDER cross-section area"}
+  EI: {value: 0.05, unit: N*m^2, source: "PLACEHOLDER bending stiffness"}
+  eta: {value: 1.0e-4, unit: s, source: "PLACEHOLDER Kelvin-Voigt time constant (uncalibrated)"}
+  top_width: {value: 0.030, unit: m, source: "PLACEHOLDER"}
+  flank_height: {value: 0.012, unit: m, source: "PLACEHOLDER"}
+  mu: {value: 0.3, source: "ASSUMED (brief)"}
+  v_eps: {value: 0.05, unit: m/s, source: "PLACEHOLDER friction regularization; convergence-checked"}
+  normal_damping_ratio: {value: 0.05, source: "PLACEHOLDER flank damping fraction of critical"}
+
+vehicle:
+  mass: {value: 250.0, unit: kg, source: BRIEF}
+  final_drive: {value: 8.1, source: BRIEF}
+  tire_radius: {value: 0.2921, unit: m, source: BRIEF}
+  Crr: {value: 0.015, source: BRIEF}
+  CdA: {value: 0.0, unit: m^2, source: "not supplied; aero neglected (06 A6.4)"}
+  rho_air: {value: 1.2, unit: kg/m^3, source: "standard air (unused while CdA=0)"}
+
+shafts:  # ALL PLACEHOLDER geometry (07 A7.4); z measured outboard from engine/bearing side
+  material: {E: 200.0e9, nu: 0.3, source: "PLACEHOLDER generic steel"}
+  primary:
+    note: "crankshaft PTO stub: two engine main bearings, sheave overhung"
+    stations: {value: [0.0, 0.10, 0.14, 0.16], unit: m}
+    diameters: {value: [0.030, 0.0254, 0.0254], unit: m, source: PLACEHOLDER}
+    bearings: {value: [0.0, 0.10], unit: m, source: PLACEHOLDER}
+    sheave_z: {value: 0.16, unit: m, source: PLACEHOLDER}
+    torque_in_z: {value: 0.0, unit: m, source: "PLACEHOLDER crank throw (torque reacted here)"}
+    critical: {z: 0.10, D: 0.030, d: 0.0254, r: 0.0015, source: "PLACEHOLDER shoulder at outboard main bearing"}
+  secondary:
+    note: "jackshaft on two bearings, sheave between them, output sprocket outboard"
+    stations: {value: [0.0, 0.05, 0.12, 0.15], unit: m}
+    diameters: {value: [0.025, 0.025, 0.025], unit: m, source: PLACEHOLDER}
+    bearings: {value: [0.0, 0.12], unit: m, source: PLACEHOLDER}
+    sheave_z: {value: 0.05, unit: m, source: PLACEHOLDER}
+    output_z: {value: 0.15, unit: m, source: PLACEHOLDER}
+    output_pitch_radius: {value: 0.04, unit: m, source: "PLACEHOLDER output gear/sprocket pitch radius"}
+    critical: {z: 0.12, D: 0.030, d: 0.025, r: 0.0015, source: "PLACEHOLDER shoulder at bearing 2"}
+
+sim:
+  belt_nodes: {value: 160, source: "numerical choice (L0 ~ 4 mm)"}
+  dt: {value: 1.0e-6, unit: s, source: "numerical choice; halved in convergence check"}
+  t_end: {value: 6.0, unit: s, source: "launch duration"}

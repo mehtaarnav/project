@@ -1,0 +1,22 @@
+[project]
+name = "cvtsim"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "matplotlib", "pyyaml"]
+[project.optional-dependencies]
+fast = ["numba"]
+test = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["cvtsim*"]
+
+[tool.setuptools.package-data]
+"cvtsim.io" = ["*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: long-running physics checks"]
