@@ -1,0 +1,86 @@
+@font-face {
+  font-family: "Doto";
+  font-weight: 700;
+  src: url("https://cdn.jsdelivr.net/npm/@fontsource/doto@5.2.5/files/doto-latin-700-normal.woff2") format("woff2");
+  font-display: swap;
+}
+:root {
+  --bg: #c4c7cc;
+  --panel: #dcdee1;
+  --panel-2: #e8e9eb;
+  --line: #a9adb3;
+  --ink: #1c1e21;
+  --mute: #5a5f66;
+  --red: #d71921;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --dot: "Doto", var(--mono);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 12px/1.35 var(--mono); }
+body { min-width: 900px; }
+header#top {
+  display: flex; align-items: center; gap: 24px; padding: 10px 16px;
+  background: var(--panel-2); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 5;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+h1 { margin: 0; font: 700 26px/1 var(--dot); letter-spacing: 0.06em; }
+h1 .sub { margin-left: 10px; font-size: 14px; color: var(--mute); }
+.transport { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+button, select {
+  font: 600 11px var(--mono); letter-spacing: 0.08em; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; cursor: pointer;
+}
+button:hover, select:hover { border-color: var(--ink); }
+button#btn-play { min-width: 68px; background: var(--ink); color: #fff; border-color: var(--ink); }
+button#btn-play.on { background: var(--red); border-color: var(--red); }
+input[type=range] { flex: 1; min-width: 120px; accent-color: var(--red); }
+.tread { min-width: 190px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.meta { color: var(--mute); text-align: right; white-space: nowrap; }
+
+#readouts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 1px; background: var(--line); border-bottom: 1px solid var(--line);
+}
+.ro { background: var(--panel); padding: 7px 12px 8px; }
+.ro .l { color: var(--mute); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.ro .v { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.ro .v small { font-size: 10px; color: var(--mute); margin-left: 3px; font-weight: 400; }
+
+main { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.row.top { display: grid; grid-template-columns: 1.55fr 1fr 1fr; gap: 12px; }
+.panel {
+  background: linear-gradient(180deg, #d4d6da 0%, #b9bdc3 100%);
+  border: 1px solid var(--line); border-radius: 6px; position: relative; overflow: hidden;
+}
+.ptitle {
+  position: absolute; top: 8px; left: 12px; z-index: 1; pointer-events: none;
+  font: 700 11px var(--mono); letter-spacing: 0.14em; color: var(--ink);
+}
+.ptitle i { font-style: normal; font-weight: 400; color: var(--mute); letter-spacing: 0.04em; margin-left: 8px; }
+.panel canvas { display: block; width: 100%; height: 440px; }
+
+#plots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.plot { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 8px 2px; }
+.plot h3 { margin: 0 0 2px 4px; font: 700 11px var(--mono); letter-spacing: 0.14em; }
+.plot h3 i { font-style: normal; color: var(--mute); font-weight: 400; letter-spacing: 0.04em; margin-left: 6px; }
+.u-legend { font: 10px var(--mono); text-align: left; padding: 0 0 0 4px; }
+.u-legend .u-series { padding: 1px 6px 1px 0; }
+.u-legend .u-value { display: none; }
+.u-over { cursor: crosshair; }
+
+.msg {
+  position: fixed; inset: auto 16px 16px auto; max-width: 420px; padding: 10px 14px;
+  background: var(--ink); color: #fff; border-radius: 6px; font-size: 11px;
+}
+.msg.err { background: var(--red); }
+.msg.hide { display: none; }
+body.drag main { outline: 2px dashed var(--red); outline-offset: -6px; }
+
+@media (max-width: 1250px) {
+  .row.top { grid-template-columns: 1fr 1fr; }
+  .panel.wide { grid-column: 1 / -1; }
+  #plots { grid-template-columns: repeat(2, 1fr); }
+}
