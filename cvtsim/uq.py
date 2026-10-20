@@ -266,14 +266,20 @@ def main(argv=None, run_fn=None):
     ap.add_argument("--n", type=int, default=30)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=None)
+    ap.add_argument("--only", nargs="+", default=None, help="screen only these input names")
     a = ap.parse_args(argv)
     inputs, skipped = available(load_inputs())
+    if a.only:
+        unknown = set(a.only) - {e["name"] for e in inputs}
+        if unknown:
+            ap.error(f"unknown input(s): {', '.join(sorted(unknown))}")
+        inputs = [e for e in inputs if e["name"] in a.only]
     if skipped:
         print("skipped (path not in parameters yet):", ", ".join(e["path"] for e in skipped))
     run_fn = run_fn or DefaultRun(a.t_end)
     scr = screen(run_fn, inputs, workers=a.workers)
     b = bands(run_fn, inputs, a.k, a.n, a.seed, workers=a.workers, scr=scr) if a.cmd == "bands" else None
-    d, md = summarize(f"uq-{a.cmd}", scr, b, dict(t_end=a.t_end, k=a.k, n=a.n, seed=a.seed))
+    d, md = summarize(f"uq-{a.cmd}", scr, b, dict(t_end=a.t_end, k=a.k, n=a.n, seed=a.seed, only=a.only))
     print(d)
     print(md)
 
