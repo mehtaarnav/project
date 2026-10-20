@@ -30,7 +30,7 @@ def test_t11_7_tornado_exact():
         assert r["rel_high"]["m1"] == pytest.approx(a * (r["high"] - NOM[r["path"]]) / y0, rel=1e-12, abs=1e-15)
         assert r["rel_high"]["m2"] == pytest.approx(r["rel_high"]["m1"], rel=1e-12, abs=1e-15)
         assert np.isnan(r["rel_low"]["m_nan"])
-        assert r["span"] == pytest.approx(abs(a) * (r["high"] - r["low"]) / y0, rel=1e-12)
+        assert r["span"] == pytest.approx(abs(a) * (r["high"] - r["low"]) / abs(y0), rel=1e-12)  # span is a magnitude (uq.screen docstring); y0 < 0 here
 
 
 def test_parallel_matches_serial():
@@ -65,9 +65,8 @@ def test_missing_paths_skipped_and_nominals_match_parameters():
     p = load()
     ok, skipped = uq.available(INPUTS, p)
     assert {"belt.mu", "build.kn_scale", "vehicle.CdA", "sheave.stop_k"} <= {e["path"] for e in ok}
-    assert all(e["path"] not in {s["path"] for s in skipped} for e in ok)
-    assert all("requires spec-11 physics" in e["source"] for e in skipped)
-    assert "clutch.mu_helix" in {e["path"] for e in skipped} or uq.path_exists(p, "clutch.mu_helix")
+    assert skipped == []  # every uncertain input reaches the model
+    assert "engine.J_e" not in {e["path"] for e in ok}  # derived as J_f + J_c on load; overriding it is a no-op
     for e in ok:
         if e["path"].startswith("build."):
             continue
