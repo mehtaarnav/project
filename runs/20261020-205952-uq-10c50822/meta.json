@@ -1,0 +1,11 @@
+{
+  "name": "uq-10c50822",
+  "group": "uq",
+  "tags": [],
+  "started": "20261020-205952",
+  "commit": "f29a77b07944ba1fa2620124907ce24378a49bb5",
+  "dirty": false,
+  "python": "3.13.16",
+  "host": "vm",
+  "wall_s": 1.2
+}
