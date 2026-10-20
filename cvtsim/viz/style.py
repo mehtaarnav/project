@@ -9,25 +9,32 @@ from matplotlib import font_manager
 
 FONTS = pathlib.Path(__file__).with_name("fonts")
 
-BLACK = "#000000"
-PANEL = "#0d0d0d"
-GRID = "#262626"
-MUTED = "#7a7a7a"
-WHITE = "#f2f2f2"
-RED = "#d71921"
-# series order: white, red, then greys (never more than four series per panel)
-SERIES = [WHITE, RED, "#9a9a9a", "#555555"]
+THEMES = {
+    "dark": dict(BLACK="#000000", PANEL="#0d0d0d", GRID="#262626", MUTED="#7a7a7a", WHITE="#f2f2f2",
+                 RED="#d71921", SERIES=["#f2f2f2", "#d71921", "#9a9a9a", "#555555"], CMAP=(0.3, 0.95)),
+    "light": dict(BLACK="#f4f4f1", PANEL="#ffffff", GRID="#d6d6d2", MUTED="#6b6b6b", WHITE="#111111",
+                  RED="#c4141c", SERIES=["#111111", "#c4141c", "#7a7a7a", "#b0b0b0"], CMAP=(0.0, 0.75)),
+}
+# Active palette, rebound by use(). WHITE is the foreground ink in either theme.
+BLACK = PANEL = GRID = MUTED = WHITE = RED = ""
+SERIES = []
+CMAP_RANGE = (0.0, 1.0)
+theme = None
 
-_ready = False
 
-
-def use():
-    """Register fonts and apply the theme (idempotent)."""
-    global _ready
-    if _ready:
+def use(name=None):
+    """Register fonts and apply a theme ('dark' or 'light'); no argument keeps the current one."""
+    global BLACK, PANEL, GRID, MUTED, WHITE, RED, SERIES, CMAP_RANGE, theme
+    name = name or theme or "dark"
+    if name == theme:
         return
-    for f in FONTS.glob("*.ttf"):
-        font_manager.fontManager.addfont(str(f))
+    if theme is None:
+        for f in FONTS.glob("*.ttf"):
+            font_manager.fontManager.addfont(str(f))
+    theme = name
+    t = THEMES[name]
+    BLACK, PANEL, GRID, MUTED, WHITE, RED = (t[k] for k in ("BLACK", "PANEL", "GRID", "MUTED", "WHITE", "RED"))
+    SERIES, CMAP_RANGE = list(t["SERIES"]), t["CMAP"]
     plt.rcParams.update({
         "figure.facecolor": BLACK, "axes.facecolor": PANEL, "savefig.facecolor": BLACK,
         "axes.edgecolor": GRID, "axes.labelcolor": MUTED, "axes.titlecolor": WHITE,
@@ -41,7 +48,36 @@ def use():
         "lines.linewidth": 1.3, "lines.solid_capstyle": "round",
         "figure.dpi": 110, "savefig.dpi": 160,
     })
-    _ready = True
+
+
+def cmap():
+    """Perceptually uniform sequential map (magma segment) that stays visible on the theme."""
+    import numpy as np
+    from matplotlib.colors import ListedColormap
+    return ListedColormap(plt.get_cmap("magma")(np.linspace(*CMAP_RANGE, 256)), "cvtsim")
+
+
+def gradient_line(ax, x, y, c, lw=2.0, vmin=None, vmax=None):
+    """Polyline coloured by per-point value c through the perceptual map. Returns the collection."""
+    import numpy as np
+    from matplotlib.collections import LineCollection
+    pts = np.column_stack([x, y])[:, None, :]
+    seg = np.concatenate([pts[:-1], pts[1:]], axis=1)
+    c = np.asarray(c, dtype=float)
+    lc = LineCollection(seg, cmap=cmap(), linewidths=lw, capstyle="round")
+    lc.set_array(0.5 * (c[:-1] + c[1:]))
+    lc.set_clim(c.min() if vmin is None else vmin, c.max() if vmax is None else vmax)
+    ax.add_collection(lc)
+    ax.autoscale_view()
+    return lc
+
+
+def colorbar(fig, mappable, ax, label=""):
+    cb = fig.colorbar(mappable, ax=ax, pad=0.02, fraction=0.05)
+    cb.outline.set_visible(False)
+    cb.set_label(label, color=MUTED, fontsize=8)
+    cb.ax.tick_params(colors=MUTED, labelsize=7.5)
+    return cb
 
 
 def title(ax, text):
