@@ -33,7 +33,10 @@ OFF = {"vehicle.model": "rigid", "vehicle.eta": 1.0, "vehicle.J_wheels": 0.0, "v
        "primary.engagement_gap": 0.002, "primary.F_preload": 683.04 + 13208.0 * 0.002,
        "primary.ramp": {"type": "straight", "r_w0": 0.04445 + 0.5 * 0.002, "kappa": 0.5},
        "engine.rpm": [2400, 2600, 2800, 3000, 3200, 3400, 3600],
-       "engine.torque": [25.08, 24.54, 23.59, 22.51, 20.88, 19.66, 18.30]}
+       "engine.torque": [25.08, 24.54, 23.59, 22.51, 20.88, 19.66, 18.30],
+       # spec 11 terms off: mean engine torque, one rigid rotor, frictionless clutches
+       "engine.pulses": False, "engine.pto_model": "rigid", "primary.mu_roller": 0.0,
+       "secondary.mu_helix": 0.0, "sheave.mu_bushing": 0.0}
 
 
 @pytest.fixture(scope="module")

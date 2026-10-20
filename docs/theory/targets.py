@@ -129,3 +129,39 @@ print(f"{'t9_8_C_b':32s} {Cb9:.17g}")
 print(f"{'t9_8_hA':32s} {hA9:.17g}")
 print(f"{'t9_8_tau':32s} {Cb9/hA9:.17g}")
 print(f"{'t9_8_rise_fraction_at_tau':32s} {1 - np.exp(-1):.17g}")
+
+# --- 11: firing pulses, PTO torsion, clutch friction (11 sections 1-3)
+from scipy.integrate import quad
+B11, S11, rc11, l11, n11, p11 = 0.089, 0.069, 8.0, 0.105, 1.30, 101325.0
+r11 = S11/2; A11 = np.pi*B11**2/4; Vc11 = A11*S11/(rc11 - 1); V111 = Vc11 + A11*S11
+ths11, dth11, a11, m11 = np.radians(-15.0), np.radians(50.0), 5.0, 2.0
+s11 = lambda th: r11*(1 - np.cos(th)) + l11*(1 - np.sqrt(1 - (r11/l11)**2*np.sin(th)**2))
+print(f"{'t11_1_s_180':32s} {s11(np.pi):.17g}")
+# T11.2: governed map mean at chart points (rpm_cut 3800, band 100 -> factor 1 up to 3700 rpm)
+for rpm, T in ((2400, 25.08), (3000, 22.51), (3600, 18.30)):
+    print(f"{f't11_2_Tmap_{rpm}':32s} {T*min(1.0, max(0.0, (3800 - rpm)/100)):.17g}")
+# gas-torque cycle mean per joule of heat: first law over the closed part,
+# W_Q = int x_b' (1 - (V/V1)^(n-1)) dpsi, mean torque = W_Q/(4 pi)
+def dxb11(ps):
+    t = max(ps - ths11, 0.0)/dth11
+    return a11*(m11 + 1)*t**m11*np.exp(-a11*t**(m11 + 1))/dth11
+WQ11 = quad(lambda ps: dxb11(ps)*(1 - ((Vc11 + A11*s11(ps))/V111)**(n11 - 1)), ths11, np.pi,
+            points=[ths11 + k*dth11 for k in (0.5, 1, 1.5, 2) if ths11 + k*dth11 < np.pi],
+            limit=400, epsabs=0.0, epsrel=1e-13)[0]
+print(f"{'t11_gas_mean_per_J':32s} {WQ11/(4*np.pi):.17g}")
+print(f"{'t11_heat_per_cycle_25Nm':32s} {4*np.pi*25.08/WQ11:.17g}")
+# T11.5: PTO k = G pi d_eff^4/(32 L_eff), d_eff = d - w_key/2; two-inertia frequency
+G11 = 200e9/(2*1.3); d11 = 0.0254 - 0.00635/2; L11 = 0.0886 + 0.030
+k11 = G11*np.pi*d11**4/(32*L11)
+Jf11, Jc11 = 0.035, 0.015
+print(f"{'t11_5_k_pto':32s} {k11:.17g}")
+print(f"{'t11_5_f_spec':32s} {np.sqrt(k11*(1/Jf11 + 1/Jc11))/(2*np.pi):.17g}")
+# free-vibration test case: primary open at x_p = -g (8.9662 mm before contact), the three
+# flyweights (0.3137 kg) at r_w = r_w0 - kappa g add to the clutch inertia
+Jc11_t = Jc11 + 3*(0.275 + 0.0387)*(0.04445 - 0.5*0.0089662)**2
+print(f"{'t11_5_f_open_clutch':32s} {np.sqrt(k11*(1/Jf11 + 1/Jc11_t))/(2*np.pi):.17g}")
+# T11.6: 45 deg helix, tau_mov = 20 N m at x = 0: tau_c = tau_mov + k_t theta_t0
+tauc11 = 20.0 + 3.930*np.radians(30.0); mu11 = 0.10
+print(f"{'t11_6_F_close_opening':32s} {tauc11/0.0381*(1 + 2*mu11):.17g}")
+print(f"{'t11_6_F_close_closing':32s} {tauc11/0.0381*(1 - 2*mu11):.17g}")
+print(f"{'t11_6_ratio':32s} {(1 + 2*mu11)/(1 - 2*mu11):.17g}")
