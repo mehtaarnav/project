@@ -35,8 +35,8 @@ Axial bar `EA/L [[1,−1],[−1,1]]`. Torsion `GJ/L [[1,−1],[−1,1]]`, where 
 **Bearings:** linear springs at nodes. Radial `k_r` acts in both planes, axial `k_a`
 on the thrust bearing only, and torsion is grounded where specified (e.g.
 output sprocket held by the load in a static solve). Moment stiffness is zero
-(simple supports, A7.2). `k_r → ∞` (default 1e12 N/m) reproduces
-rigid supports. **Bearing reaction** = force the bearing applies on the shaft,
+(simple supports, A7.2). The default `k_r = 1e12 N/m` is effectively rigid (relative deflection error
+~3e-5 in T7.5). The tests use `1e15` to reach the rigid limit to 1e-5. **Bearing reaction** = force the bearing applies on the shaft,
 `R = −k u`. The **bearing load** reported is the force the shaft applies on the bearing, `−R`.
 
 **Internal forces** at a station come from element end forces `K_e u_e`: shear `V`,
