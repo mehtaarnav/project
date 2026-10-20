@@ -69,6 +69,7 @@ def run_tune(name, t_end=None, surface=None, dt=None, nout=None, n_frames=400, d
     nout = nout or out_samples(t_end)
     overrides = {f"vehicle.{k}": v for k, v in component("vehicle_surfaces", surface).items()} if surface else {}
     p = load(car, tune=name, overrides=overrides)
+    p["scenario_name"] = sc["name"] if sc else "launch"
     model = build(p, dt=dt, scenario=sc)
     relax(model)
     res, snaps = simulate(model, t_end, nout=nout, n_frames=n_frames)

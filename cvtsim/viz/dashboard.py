@@ -19,9 +19,10 @@ def launch(res, CH, sh, p, metrics, run_name):
     ratio = np.where(np.abs(ws) > 1.0, _col(res, CH, "w_e") / np.where(np.abs(ws) > 1.0, ws, 1.0), np.nan)
     geo = _col(res, CH, "rstar_s") / _col(res, CH, "rstar_p")
 
-    fig = plt.figure(figsize=(16, 11.5))
-    S.header(fig, "cvtsim / launch", f"{run_name}   ·   full throttle from idle   ·   dt {p['sim']['dt']:.1e} s   ·   {int(p['sim']['belt_nodes'])} belt nodes   ·   * placeholder shaft geometry and static stress, no fatigue: illustrative only")
-    gs = fig.add_gridspec(4, 6, height_ratios=[0.42, 1, 1, 1], hspace=0.55, wspace=0.45,
+    fig = plt.figure(figsize=(16, 13))
+    event = p.get("scenario_name", "launch")
+    S.header(fig, f"cvtsim / {event}", f"{run_name}   ·   dt {p['sim']['dt']:.1e} s   ·   {int(p['sim']['belt_nodes'])} belt nodes   ·   * depends on shaft geometry, materials and bearing ratings: check python -m cvtsim.inputs --open")
+    gs = fig.add_gridspec(5, 6, height_ratios=[0.42, 0.42, 1, 1, 1], hspace=0.55, wspace=0.45,
                           left=0.045, right=0.985, top=0.9, bottom=0.05)
     cards = [("engagement", f"{metrics['engage_rpm']:.0f}", "rpm", False),
              ("shift complete", "—" if np.isnan(metrics["t_shift_s"]) else f"{metrics['t_shift_s']:.2f}", "s", False),
@@ -31,9 +32,18 @@ def launch(res, CH, sh, p, metrics, run_name):
              ("energy residual / w_in", f"{metrics['energy_resid']:.0e}", "", False)]
     for i, (lab, val, unit, acc) in enumerate(cards):
         S.card(fig.add_subplot(gs[0, i]), lab, val, unit, acc)
+    g = lambda k, fmt: fmt.format(metrics[k]) if np.isfinite(metrics.get(k, np.nan)) else "—"
+    dur = [("PTO side load", g("pto_side_peak_N", "{:.0f}"), "N", True),
+           ("PTO face moment", g("pto_face_moment_Nm", "{:.0f}"), "N·m", True),
+           ("Goodman, crank PTO*", g("n_goodman_prim", "{:.2f}"), "", True),
+           ("Goodman, jackshaft*", g("n_goodman_sec", "{:.2f}"), "", True),
+           ("PTO main bearing P_eq", g("P_eq_prim2_N", "{:.0f}"), "N", False),
+           ("jackshaft bearing C needed*", g("C_req_sec1_N", "{:.0f}"), "N", True)]
+    for i, (lab, val, unit, acc) in enumerate(dur):
+        S.card(fig.add_subplot(gs[1, i]), lab, val, unit, acc)
 
     def panel(r, c, name, xlabel="t [s]", ylabel=""):
-        ax = fig.add_subplot(gs[r, 2 * c:2 * c + 2])
+        ax = fig.add_subplot(gs[r + 1, 2 * c:2 * c + 2])
         S.title(ax, name)
         ax.set(xlabel=xlabel, ylabel=ylabel)
         return ax
