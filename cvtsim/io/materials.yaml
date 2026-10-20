@@ -1,0 +1,59 @@
+# Material and bearing constants for fatigue and bearing life (docs/theory/12_fatigue_bearings.md).
+# Source tags: BRIEF, measured, DERIVED, ASSUMED, UNVERIFIED, PLACEHOLDER.
+# Su, Sy in MPa; C in N. A PLACEHOLDER value must not be read as a prediction.
+
+materials:
+  steel_4140_QT:
+    description: AISI 4140 quenched and tempered (tempering temperature not supplied)
+    Su_MPa:
+      value: null
+      source: PLACEHOLDER (tensile strength depends on temper; fill from certified mill cert)
+    Sy_MPa:
+      value: null
+      source: PLACEHOLDER (fill from certified mill cert or the handbook value for the actual temper)
+
+  steel_1045:
+    description: AISI 1045 (condition not supplied)
+    Su_MPa:
+      value: null
+      source: PLACEHOLDER (condition-dependent; fill from supplier data)
+    Sy_MPa:
+      value: null
+      source: PLACEHOLDER
+
+  aluminum_7075_T6:
+    description: 7075-T6 wrought aluminum
+    Su_MPa:
+      value: 572
+      source: UNVERIFIED (typical value from ASM Metals Handbook / MIL-HDBK-5 memory; not checked against the handbook)
+    Sy_MPa:
+      value: 503
+      source: UNVERIFIED (typical value, same as above)
+
+  aluminum_6061_T6:
+    description: 6061-T6 wrought aluminum
+    Su_MPa:
+      value: 310
+      source: UNVERIFIED (typical value from ASM Metals Handbook memory; not checked)
+    Sy_MPa:
+      value: 276
+      source: UNVERIFIED (typical value, same as above)
+
+bearings:
+  ball_6205:
+    type: ball
+    p: 3.0
+    C_N:
+      value: 14000
+      source: UNVERIFIED (SKF 6205 basic dynamic load rating C = 14.0 kN, from SKF catalogue memory; confirm against the actual part number)
+  roller_PLACEHOLDER:
+    type: roller
+    p: 3.3333333333
+    C_N:
+      value: null
+      source: PLACEHOLDER (fill C from the actual roller bearing part number's catalogue rating)
+
+pto:
+  allowable_side_load_N:
+    value: null
+    source: PLACEHOLDER (allowable PTO radial load not yet supplied by Rehlko)
