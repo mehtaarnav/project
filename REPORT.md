@@ -11,7 +11,7 @@ Downstream, it computes shaft and bearing loads. The equations, sources and test
 [`docs/theory/10_validation.md`](docs/theory/10_validation.md). The working standard is
 [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
-**Baseline run:** [`runs/20261020-094427-tune-default`](runs/20261020-094427-tune-default/), clean commit 31ede4e.
+**Baseline run:** [`runs/20261020-094427-tune-default`](runs/20261020-094427-tune-default/), clean commit d6299ff.
 **Tests:** 119 pass locally (`pytest -q`, about 12 min).
 
 ## 1. Baseline launch (default tune = team configuration "Boombox 2026")
