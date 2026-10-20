@@ -57,12 +57,12 @@ Sensitivity ranking for the PTO loads, largest first:
 5. belt friction.
 
 ## Open work, in order
-1. **Finish the run reports.**
-   * The band run (`--top engine_J_f primary_J_clutch belt_EI primary_engagement_gap belt_mu`,
-     30 samples, 2 s) and a hill-climb run were still going when this session ended. Rerun
-     them if they are missing from `runs/`.
-   * Long runs only survive a container restart if they are started as session background
-     tasks.
+1. **Done:** the sensitivity bands (`runs/20261020-215336-uq-bands`, 30 samples, first 2 s) and a
+   hill climb (`runs/20261020-213705-tune-default-hill_climb`) are committed.
+   * 5–95 % ranges: peak bearing load 2.8–5.6 kN, peak PTO side load 1.0–1.5 kN, jackshaft Goodman
+     factor 0.50–0.99.
+   * The upper tail comes from the engagement and lock-up transient.
+   * Long runs only survive a container restart when started as session background tasks.
 2. **Rewrite REPORT.md from the current baseline.** It still describes the model before firing
    pulses, friction and durability.
 3. **Run each scenario once.** Add their peak loads to the report. The design load is probably the
