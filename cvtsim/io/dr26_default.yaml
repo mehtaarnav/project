@@ -137,6 +137,18 @@ shafts:  # ALL PLACEHOLDER geometry (07 A7.4); z measured outboard from engine/b
     output_pitch_radius: {value: 0.04, unit: m, source: "PLACEHOLDER output gear/sprocket pitch radius"}
     critical: {z: 0.12, D: 0.0254, d: 0.01905, r: 0.002, source: "PLACEHOLDER shoulder at bearing 2 (d = 3/4 in jackshaft, CVTech bore; D and r PLACEHOLDER, r kept inside the Peterson fit range t/r <= 2)"}
 
+durability:  # docs/theory/12 section 7; keys refer to cvtsim/io/materials.yaml
+  primary:
+    material: {value: steel_1045_CD, source: "PLACEHOLDER: CH440 crankshaft material not published (ask Rehlko); 1045 CD stands in"}
+    finish: {value: ground, source: "ASSUMED ground journal and PTO stub"}
+    bearings: {value: [ch440_main_pto_side, ch440_main_pto_side], source: "bearing 1 flywheel-side main ASSUMED the same ball bearing as the PTO side (service manual gives one 35 mm ball main)"}
+  secondary:
+    material: {value: steel_1045_CD, source: "PLACEHOLDER jackshaft material"}
+    finish: {value: machined, source: "ASSUMED machined jackshaft"}
+    bearings: {value: [null, null], source: "PLACEHOLDER jackshaft bearings not chosen; the required rating is reported instead"}
+  belt_line_offset: {value: 0.06009, range: [0.05959, 0.06059], unit: m, source: "CVTech-AAB Mini-Baja geometry drawing: belt line 60.09 +- 0.5 mm from the primary mounting face"}
+  target_launches: {value: 1000, source: "ASSUMED reporting basis: bearing rating needed for an L10 of 1000 full launches (12 sec 7.4)"}
+
 sim:
   belt_nodes: {value: 200, source: "numerical choice (L0 = 4.4 mm; >= 22 nodes in the smallest wrap)"}
   dt: {value: 1.25e-7, unit: s, source: "numerical choice: speeds and forces converged to 1e-3 against dt/2 after engagement (tests/test_system.py); 2.5e-7 missed by up to 1e-3 on secondary speed"}

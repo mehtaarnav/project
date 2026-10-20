@@ -19,6 +19,20 @@ METRIC_KEYS = ("engage_rpm", "t_shift_s", "v_end_kmh", "dist_m", "rpm_end", "x_s
                "T_tight_max", "slip_s_mean", "T_belt_max_C", "tire_slip_max", "energy_resid")
 
 
+OUT_DT = 2.5e-4  # s; resolves firing (<= 1.67 ms at 3600 rpm) and the PTO mode (<= 0.53 ms), 12 sec 7.6
+
+
+def out_samples(t_end):
+    """Output samples for a launch of length t_end that meets the durability sampling rule."""
+    return int(np.ceil(t_end / OUT_DT)) + 1
+
+
+def durability_metrics(res, p, sh):
+    """Shaft, bearing and PTO side-load results (12 sec 7) as flat metrics."""
+    from cvtsim.post.durability import launch_durability, summary_metrics
+    return summary_metrics(launch_durability(res, CH, sh, p))
+
+
 def _col(res, k):
     return res[:, CH.index(k)]
 
@@ -42,8 +56,9 @@ def metrics(res, p):
                 energy_resid=np.max(np.abs((E - E[0]) - (Win - Wd))) / max(Win[-1], 1e-12))
 
 
-def run_tune(name, t_end, surface=None, dt=None, nout=3000, n_frames=400, dashboard=True):
+def run_tune(name, t_end, surface=None, dt=None, nout=None, n_frames=400, dashboard=True):
     """Simulate one tune as a tracked run. Returns (p, res, snaps, run, metrics)."""
+    nout = nout or out_samples(t_end)
     overrides = {f"vehicle.{k}": v for k, v in component("vehicle_surfaces", surface).items()} if surface else {}
     p = load(tune=name, overrides=overrides)
     model = build(p, dt=dt)
@@ -75,6 +90,7 @@ def _dashboard(run, res, snaps, p, m):
     sh = shaft_histories(res, p, CH)
     m.update(bearing_peak_N=max(sh[k].max() for k in sh["bearing_cols"]),
              vm_peak_MPa=max(sh["vm_prim"].max(), sh["vm_sec"].max()) / 1e6)
+    m.update(durability_metrics(res, p, sh))
     fig = dashboard.launch(res, CH, sh, p, m, run.dir.name)
     run.figure(fig, "dashboard")
     plt.close(fig)
@@ -135,7 +151,7 @@ def main(argv=None):
         sp.add_argument("--t-end", type=float, default=None)
         sp.add_argument("--surface", default=None)
         sp.add_argument("--dt", type=float, default=None)
-        sp.add_argument("--nout", type=int, default=3000)
+        sp.add_argument("--nout", type=int, default=None, help="output samples (default: 4 kHz, the 12 sec 7.6 rule)")
         sp.add_argument("--frames", type=int, default=400)
     a = ap.parse_args(argv)
     if a.cmd == "list":

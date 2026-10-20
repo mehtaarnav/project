@@ -121,3 +121,81 @@ Numbers are closed forms; no tolerance is loosened.
   `pto_side_load_ratio`.
 * Constants: `cvtsim/io/materials.yaml` (material, bearing, PTO allowable), each with a `source:` tag.
   The Marin `ka` table is held in `fatigue.py` as UNVERIFIED (see §2.4) pending a YAML move.
+
+## 7. Launch durability (`cvtsim.post.durability`)
+Turns one simulated launch into fatigue, bearing and PTO side-load results. Inputs: the shaft
+histories of `cvtsim.fe.shaft_loads` (bearing reactions, bending moment `M(t)` and torque `T(t)` at
+each shaft's critical section), the shaft speeds, and the constants in `materials.yaml`.
+
+### 7.1 Cycle counting by revolutions
+A fixed-direction load on a rotating shaft reverses the bending stress once per revolution. Let
+`ω(t)` be the shaft speed. Then `N_rev(t) = ∫ |ω| dt / 2π` (trapezoidal), and the shaft makes one
+bending cycle per revolution with amplitude `M(t)` at that instant. In discrete form, the interval
+`[t_i, t_i+1]` adds `ΔN_i` cycles at the interval mean of `M`.
+* Primary: the crank PTO turns at the clutch speed `w_c`.
+* Secondary: the jackshaft turns at `w_s`.
+
+This replaces A12.1 (peak moment for all cycles) for damage. The Goodman factor keeps A12.1 (§7.3).
+
+### 7.2 Damage
+Two load families are summed in Miner (assumption A12.7):
+* **Bending, one cycle per revolution:** `σ_a' = Kf · 32 M / (π d³)`, `σ_m' = √3 Kfs |τ(T)|`.
+  `T` is the interval-mean torque and `τ(T) = 16 T / (π d³)`.
+* **Torsion, rainflow of `T(t)`:** `σ_a' = √3 Kfs τ_a`, `σ_m' = √3 Kfs |τ_m|`.
+
+`D = Σ n / N(σ_eq)`, with `σ_eq` and the endurance cutoff as in §2.5. The result is reported as
+damage per launch and as launches to `D = 1`.
+
+Notch factors:
+* Bending: `Kf = 1 + q (Kt − 1)`, with `q` from §2.3 at the section fillet radius.
+* Torsion: `Kfs = Kts`, i.e. `q = 1` (assumption A12.8, conservative; the torsional Peterson
+  constant is not verified).
+
+Endurance limit: `Se` from §2.4, with the finish and `d` of the section, and kc = kd = ke = kf = 1.
+
+### 7.3 Goodman and yield (peak envelope)
+Assumption A12.1 applies.
+* `σ_a' = sqrt((Kf σ_b,max)² + 3 (Kfs τ_a,max)²)`, where `τ_a,max` is the largest rainflow torque
+  half-range.
+* `σ_m' = √3 Kfs |τ|max`.
+* Results: `n` from §2.5 and `n_y = Sy / (σ_a' + σ_m')`.
+
+### 7.4 Bearings
+Bearing `j` carries the radial reaction magnitude `R_j(t)`. Within the launch:
+* `P_eq` comes from §3, weighted by the revolutions `ΔN_i`.
+* Mean speed: `n̄ = N_rev / t_launch · 60` rpm.
+* With a rating `C`: launches to L10 = `(C / P_eq)^p · 1e6 / N_rev`, and L10h at `P_eq` and `n̄`.
+* Always: the rating needed for an L10 of `n_L` launches, `C_req = P_eq (n_L N_rev / 1e6)^(1/p)`
+  (`durability.target_launches`), and the hours form `C_req = P_eq (60 n̄ L_h / 1e6)^(1/p)`.
+
+The launch is the duty cycle. A real duty mixes in cruising, so these figures are a
+**launch-severity** measure, not a service life (A12.9).
+
+### 7.5 PTO side load
+The radial force on the PTO at the belt line is the primary sheave hub force `F_hub(t) = |(Fx_p, Fy_p)|`.
+The moment at the clutch mounting face is `F_hub · a`, where `a` is the belt-line offset (60.09 mm,
+CVTech drawing). Report the peak of both. When `F_allow` is known, also report `ratio = max F_hub / F_allow` (§3).
+
+### 7.6 Sampling requirement
+The output must resolve the firing torque: at least 20 samples per firing period at the highest
+engine speed. For a single-cylinder four-stroke, `f_fire = rpm / 120`, so `Δt_out ≤ 120 / (20 rpm_max)`.
+The PTO torsional mode (11 §2) needs `Δt_out ≤ 1 / (10 f_n)`. If either fails, the result is
+flagged `undersampled`.
+
+### 7.7 Targets
+| ID | Case | Target |
+|---|---|---|
+| T12.15 | `ω = 2π·10` rad/s for 1 s, `M` constant giving σ_a = 400 MPa (Kf = 1), `T = 0`, Su = 600, Se = 300 MPa | `N_rev = 10`; D = 10 / 34017.438 = 2.9396688e-4 |
+| T12.16 | Same, bearing `R = P` constant with C/P = 10, p = 3 | launches to L10 = 1e8; P_eq = P |
+| T12.17 | `C_req`, P_eq = 1000 N, n̄ = 1000 rpm, L_h = 100 h, p = 3 (equivalently n_L N_rev = 6e6 rev) | 1817.1206 N |
+| T12.18 | Two halves of a launch at constant ω, `R` = 1000 N then 2000 N, p = 3 | P_eq = (0.5·1000³ + 0.5·2000³)^(1/3) = 1650.964 N |
+| T12.19 | Side load, `Fx_p = 300`, `Fy_p = 400` N constant, a = 0.06009 m | F_hub = 500 N; M_face = 30.045 N·m |
+
+Tolerance rel 1e-6 (closed forms). `N_rev` is exact up to the trapezoidal error, which is zero for constant ω.
+
+### 7.8 Assumptions (additions)
+| # | Assumption | Bias |
+|---|---|---|
+| A12.7 | Bending and torsion families are damaged independently and summed | ↓ slightly non-conservative (ignores the interaction of in-phase peaks) |
+| A12.8 | `Kfs = Kts` (torsional notch sensitivity 1) | ↑ conservative |
+| A12.9 | The launch is the whole duty cycle | ↑ conservative for life |

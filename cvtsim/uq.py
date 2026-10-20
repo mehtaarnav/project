@@ -27,7 +27,9 @@ from cvtsim.io.params import _num, load, load_raw
 UNCERTAINTY = pathlib.Path(__file__).with_name("io") / "uncertainty.yaml"
 BUILD_PREFIX = "build."
 DECISION_METRICS = ("engage_rpm", "t_shift_s", "t_100ft_s", "v_end", "dist_m", "T_tight_max",
-                    "T_belt_max_C", "bearing_peak_N", "vm_peak_MPa")
+                    "T_belt_max_C", "bearing_peak_N", "vm_peak_MPa",
+                    "pto_side_peak_N", "n_goodman_prim", "n_goodman_sec", "damage_prim", "damage_sec",
+                    "P_eq_prim2_N", "C_req_sec1_N")
 FT100 = 30.48  # m
 
 
@@ -70,13 +72,13 @@ def default_run(overrides, t_end=2.0, group="uq", record=True):
     """A short launch with the given parameter overrides; returns the decision metrics."""
     from cvtsim.cvt.system import CH, build, relax, simulate
     from cvtsim.fe.shaft_loads import shaft_histories
-    from cvtsim.tune import metrics
+    from cvtsim.tune import durability_metrics, metrics, out_samples
     ov = dict(overrides)
     kn = ov.pop("build.kn_scale", 1.0)
     p = load(tune="default", overrides=ov)
     model = build(p, kn_scale=kn)
     relax(model)
-    res, _ = simulate(model, t_end, nout=1500, n_frames=2)
+    res, _ = simulate(model, t_end, nout=out_samples(t_end), n_frames=2)
     m = metrics(res, p)
     t, v = res[:, CH.index("t")], res[:, CH.index("v")]
     dist = np.concatenate([[0.0], np.cumsum(0.5 * (v[1:] + v[:-1]) * np.diff(t))])
@@ -84,6 +86,7 @@ def default_run(overrides, t_end=2.0, group="uq", record=True):
     sh = shaft_histories(res, p, CH)
     m.update(bearing_peak_N=max(sh[k].max() for k in sh["bearing_cols"]),
              vm_peak_MPa=max(sh["vm_prim"].max(), sh["vm_sec"].max()) / 1e6)
+    m.update(durability_metrics(res, p, sh))
     if record:
         run = runs.Run(f"uq-{uuid.uuid4().hex[:8]}", dict(base=load_raw(), tune="default"),
                        overrides=dict(overrides, t_end=t_end), group=group)

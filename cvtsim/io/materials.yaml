@@ -21,6 +21,15 @@ materials:
       value: null
       source: PLACEHOLDER
 
+  steel_1045_CD:
+    description: AISI 1045 cold drawn
+    Su_MPa:
+      value: 630
+      source: UNVERIFIED (Shigley 10th ed. Table A-20, 1045 CD, from memory)
+    Sy_MPa:
+      value: 530
+      source: UNVERIFIED (same table)
+
   aluminum_7075_T6:
     description: 7075-T6 wrought aluminum
     Su_MPa:
