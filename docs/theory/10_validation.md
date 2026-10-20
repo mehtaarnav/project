@@ -17,6 +17,25 @@ Verified from the full text.
 | Stiffer primary spring | same direction as lighter flyweights | Qualitative trend. |
 | Stiffer secondary spring | holds low ratio longer, earlier slip at high ratio | Qualitative trend. |
 
+## SAE 2025-01-5069 (Spilde & Liu, South Dakota State, 2024 car)
+
+Verified from the full text. Same engine family as DR26 (Kohler Command Pro 14 Baja).
+
+| Quantity | Value | Transfer to DR26 |
+|---|---|---|
+| Top speed, GPS | 36.7 mph (59.06 km/h); other teams 33-39 mph (53-63 km/h) | Direct band for the DR26 top speed. Their CVT overdrive is 0.65 and their final drive differs, so match the band, not the number. |
+| 100 ft acceleration | 3.92 s (2024 car), 5.28 s (2023 car) | Direct band. |
+| Aerodynamic drag | C_d ≈ 0.44; rotating tires up to 25 % extra; 72.9 % of drive force at top speed | Sets C_dA ≈ 0.44 × frontal area (≈1.3 m², PLACEHOLDER) × 1.25 ≈ 0.7 m². |
+| Rolling resistance | 0.01-0.02 dynamic, ≥ 0.02 static | Default C_rr = 0.02; surface presets remain ASSUMED. |
+| Engine | 7.17 kW, 25.08 N·m at 2400 rpm | Confirms the brief's torque chart. |
+
+## Targets for the DR26 baseline
+
+| Metric | Band | Source |
+|---|---|---|
+| 100 ft time | 3.9 to 5.3 s | SAE 2025-01-5069; 2010-01-0861 gives 4.1-4.5 s |
+| Top speed | 53 to 63 km/h | SAE 2025-01-5069 |
+
 ## How the simulator is checked against it
 
 * `performance` metrics report the 100 ft time. A DR26 baseline outside roughly 3.5 to 5.5 s
