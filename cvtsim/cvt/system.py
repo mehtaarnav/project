@@ -383,7 +383,10 @@ def build(p, dt=None, kn_scale=1.0):
     dX = np.roll(X, -1, axis=0) - X
     L0 = float(np.mean(np.hypot(dX[:, 0], dX[:, 1])))
     m_node = b["rho"] * b["area"] * L0
-    k_n = kn_scale * flank_stiffness(b["G_hot"], b["flank_height"], L0, b["top_width"])
+    if b.get("k_radial"):  # measured wedge stiffness: radial node stiffness 2 k_n sin^2(beta) = k_radial L0
+        k_n = kn_scale * b["k_radial"] * L0 / (2.0 * np.sin(beta) ** 2)
+    else:
+        k_n = kn_scale * flank_stiffness(b["G_hot"], b["flank_height"], L0, b["top_width"])
     c_n = 2.0 * b["normal_damping_ratio"] * np.sqrt(k_n * m_node)
     margin = p["sheave"]["r_outer_margin"]
     m_ax_p = pr["m_axial"] + pr["n_weights"] * d["m_w"] * ramp(0.0)[1] ** 2

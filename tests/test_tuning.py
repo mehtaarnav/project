@@ -36,7 +36,9 @@ OFF = {"vehicle.model": "rigid", "vehicle.eta": 1.0, "vehicle.J_wheels": 0.0, "v
        "engine.torque": [25.08, 24.54, 23.59, 22.51, 20.88, 19.66, 18.30],
        # spec 11 terms off: mean engine torque, one rigid rotor, frictionless clutches
        "engine.pulses": False, "engine.pto_model": "rigid", "primary.mu_roller": 0.0,
-       "secondary.mu_helix": 0.0, "sheave.mu_bushing": 0.0}
+       "secondary.mu_helix": 0.0, "sheave.mu_bushing": 0.0,
+       # belt as it was before Messick 2018 section properties were adopted
+       "belt.area": 3.0e-4, "belt.rho": 1150.0, "belt.EI": 0.05, "belt.mu": 0.3, "belt.k_radial": None,}
 
 
 @pytest.fixture(scope="module")

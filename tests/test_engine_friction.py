@@ -19,7 +19,10 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 RPM = 2.0 * math.pi / 60.0
 # spec 11 off: mean engine torque, one rigid rotor, frictionless clutches
 MEAN = {"engine.pulses": False, "engine.pto_model": "rigid", "primary.mu_roller": 0.0,
-        "secondary.mu_helix": 0.0, "sheave.mu_bushing": 0.0}
+        "secondary.mu_helix": 0.0, "sheave.mu_bushing": 0.0,
+       # belt as it was before Messick 2018 section properties were adopted
+       "belt.area": 3.0e-4, "belt.rho": 1150.0, "belt.EI": 0.05, "belt.mu": 0.3, "belt.k_radial": None,
+}
 
 
 @pytest.fixture(scope="module")

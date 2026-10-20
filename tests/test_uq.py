@@ -75,7 +75,8 @@ def test_missing_paths_skipped_and_nominals_match_parameters():
         for k in e["path"].split("."):
             d = d[k]
         assert d == pytest.approx(e["nominal"], rel=1e-12), e["path"]
-        assert e["low"] < e["nominal"] < e["high"]
+        # one-sided ranges are allowed (e.g. the hot-belt nominal is the soft end of the belt range)
+        assert e["low"] <= e["nominal"] <= e["high"] and e["low"] < e["high"]
         assert e["source"]
 
 

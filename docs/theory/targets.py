@@ -123,7 +123,7 @@ print(f"{'t9_7_slip_T200_v10':32s} {s09*arctanh(200/rt9/(mut9*m9*g9*bL9)):.17g}"
 print(f"{'t9_7_traction_limit_N':32s} {mut9*m9*g9*bL9:.17g}")
 # T9.8 belt heating: m = rho A L, C_b = m c_p, A_s = L (b + 2 h_c), tau = C_b/(h A_s)
 Lb9 = 0.895  # belt pitch length, dr26_default.yaml
-Cb9 = 1150.0*3.0e-4*Lb9*1700.0
+Cb9 = 1576.5*2.772e-4*Lb9*1700.0  # rho A = 0.437 kg/m (Messick 2018)
 hA9 = 40.0*Lb9*(0.030 + 2*0.012)
 print(f"{'t9_8_C_b':32s} {Cb9:.17g}")
 print(f"{'t9_8_hA':32s} {hA9:.17g}")

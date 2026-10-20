@@ -82,16 +82,17 @@ sheave:
 
 belt:
   name: {value: "CVTech BD52-2172-S proxy (geometry from the A/B model's BD52-2179-S)", source: BRIEF}
-  G_hot: {value: 30.15e6, unit: Pa, source: "BRIEF / Messick 2018 thesis (UNVERIFIED), small strain"}
+  G_hot: {value: 30.15e6, unit: Pa, source: "Messick 2018 thesis sec. 4.1, DMA storage modulus at 60 C, CVTech BD52-2172-S"}
   G_cold: {value: 46.71e6, unit: Pa, source: "BRIEF / Messick 2018 thesis (UNVERIFIED)"}
-  rho: {value: 1150.0, unit: kg/m^3, source: "ASSUMED (brief)"}
+  rho: {value: 1576.5, unit: kg/m^3, source: "DERIVED: measured 0.437 kg/m (Messick 2018 sec. 4.6, 375 g belt) / equivalent area 2.772e-4 m^2"}
   EA: {value: 243.5e3, unit: N, source: "BRIEF (UNVERIFIED)"}
-  area: {value: 3.0e-4, unit: m^2, source: "PLACEHOLDER cross-section area"}
-  EI: {value: 0.05, unit: N*m^2, source: "PLACEHOLDER bending stiffness"}
+  area: {value: 2.772e-4, unit: m^2, source: "Messick 2018 sec. 4.4, equivalent bending cross-section, CVTech BD52-2172-S"}
+  EI: {value: 0.2602, unit: N*m^2, source: "Messick 2018 sec. 4.4: FEA of the cogged section, neutral axis at the aramid yarns, E at 60 C"}
+  k_radial: {value: 18.71e6, unit: N/m^2, source: "Messick 2018 sec. 4.5: measured wedge (radial) stiffness per belt length per radial penetration, 12 deg blocks, scaled to 60 C; 28.98e6 at 25 C"}
   eta: {value: 2.0e-6, unit: s, source: "PLACEHOLDER Kelvin-Voigt time constant (uncalibrated); chosen so the highest segment mode has damping ratio ~0.4 (explicit-step stable); low modes nearly undamped"}
   top_width: {value: 0.030, unit: m, source: "PLACEHOLDER"}
   flank_height: {value: 0.012, unit: m, source: "PLACEHOLDER"}
-  mu: {value: 0.3, source: "ASSUMED (brief)"}
+  mu: {value: 0.4, source: "Gerbert range 0.3-0.5, value used by Messick 2018 sec. 6/7.4 and refs. [6],[12] there (not measured; team workbook uses 0.3)"}
   v_eps: {value: 0.05, unit: m/s, source: "PLACEHOLDER friction regularization; convergence-checked"}
   normal_damping_ratio: {value: 0.05, source: "PLACEHOLDER flank damping fraction of critical"}
   c_p: {value: 1700.0, unit: J/(kg*K), source: "ASSUMED rubber specific heat (09 sec 4)"}
