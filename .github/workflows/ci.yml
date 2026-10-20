@@ -8,6 +8,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install numpy scipy matplotlib pyyaml pytest numba
+      - run: pip install numpy scipy matplotlib pyyaml openpyxl pytest numba
       - run: pip install -e .
       - run: pytest -q

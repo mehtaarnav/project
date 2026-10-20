@@ -2,7 +2,7 @@
 name = "cvtsim"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["numpy", "scipy", "matplotlib", "pyyaml"]
+dependencies = ["numpy", "scipy", "matplotlib", "pyyaml", "openpyxl"]
 [project.optional-dependencies]
 fast = ["numba"]
 test = ["pytest"]

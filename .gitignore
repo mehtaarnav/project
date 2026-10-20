@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 .claude/worktrees/
 runs/*/series.csv.gz
+reference/
+cvtsim/io/CVT_Inputs.xlsx
