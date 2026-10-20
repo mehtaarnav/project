@@ -52,7 +52,7 @@ Strain energy `U = Σ_e ½ EA L0 ε² + Σ_k ½ (EI/L0) φ_k²`. Dissipated powe
 | `ρ` | density | kg/m³ | 1150 (brief, assumed) |
 | `A` | cross-section area | m² | PLACEHOLDER 3.0e-4 |
 | `EI` | bending stiffness | N·m² | PLACEHOLDER 0.05 |
-| `η` | axial Kelvin–Voigt time constant | s | PLACEHOLDER 1e-4 |
+| `η` | axial Kelvin–Voigt time constant | s | PLACEHOLDER 2e-6 (≈0.4 critical on the highest segment mode, explicit-step stable; uncalibrated) |
 | `G` | rubber shear modulus | Pa | 30.15e6 hot / 46.71e6 cold (Messick 2018, UNVERIFIED) |
 | `b` | belt top width | m | PLACEHOLDER 0.030 |
 | `h_c` | flank contact height | m | PLACEHOLDER 0.012 |

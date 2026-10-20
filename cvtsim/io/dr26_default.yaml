@@ -52,7 +52,7 @@ belt:
   EA: {value: 243.5e3, unit: N, source: "BRIEF (UNVERIFIED)"}
   area: {value: 3.0e-4, unit: m^2, source: "PLACEHOLDER cross-section area"}
   EI: {value: 0.05, unit: N*m^2, source: "PLACEHOLDER bending stiffness"}
-  eta: {value: 1.0e-4, unit: s, source: "PLACEHOLDER Kelvin-Voigt time constant (uncalibrated)"}
+  eta: {value: 2.0e-6, unit: s, source: "PLACEHOLDER Kelvin-Voigt time constant (uncalibrated); chosen so the highest segment mode has damping ratio ~0.4 (explicit-step stable); low modes nearly undamped"}
   top_width: {value: 0.030, unit: m, source: "PLACEHOLDER"}
   flank_height: {value: 0.012, unit: m, source: "PLACEHOLDER"}
   mu: {value: 0.3, source: "ASSUMED (brief)"}
@@ -89,5 +89,5 @@ shafts:  # ALL PLACEHOLDER geometry (07 A7.4); z measured outboard from engine/b
 
 sim:
   belt_nodes: {value: 160, source: "numerical choice (L0 ~ 4 mm)"}
-  dt: {value: 1.0e-6, unit: s, source: "numerical choice; halved in convergence check"}
+  dt: {value: 5.0e-7, unit: s, source: "numerical choice (friction-regularization and axial-mode stability limits ~1.3e-6 s); halved in convergence check"}
   t_end: {value: 6.0, unit: s, source: "launch duration"}
