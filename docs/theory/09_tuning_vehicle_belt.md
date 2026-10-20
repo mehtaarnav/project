@@ -4,7 +4,7 @@ Extends 05 (clutches), 06 (drivetrain) and 03 (belt). Notation and frames as in 
 
 ## 1. Primary with a profiled ramp
 
-Travel from full open `u = x_p + g ∈ [0, g + x_p,stop]`. Flyweight radius `r_w(u)` is a
+Travel from belt contact `u = x_p ∈ [−g, x_p,stop]` (the team CVT_model_v4 convention: the spring preload and flyweight radius are given at belt contact). `g` is the travel from full open to contact; `u < 0` extrapolates the ramp linearly. Flyweight radius `r_w(u)` is a
 tabulated, strictly increasing profile, interpolated with a monotone cubic (PCHIP). Then
 `κ(u) = dr_w/du` and `κ'(u) = d²r_w/du²`. A straight ramp is `r_w = r_w0 + κ0 u`
 (κ0 = 0.5 for the double 45° face, 05 §3).

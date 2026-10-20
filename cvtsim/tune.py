@@ -55,10 +55,13 @@ def run_tune(name, t_end, surface=None, dt=None, nout=3000, n_frames=400, dashbo
     run.series(CH, res)
     np.savez_compressed(run.dir / "snaps.npz", **snaps)
     m = metrics(res, p)
-    if dashboard:
-        _dashboard(run, res, snaps, p, m)
     run.log(**m)
-    run.finish()
+    try:
+        if dashboard:
+            _dashboard(run, res, snaps, p, m)
+            run.log(**m)  # adds shaft metrics computed by the dashboard
+    finally:
+        run.finish()  # the run record survives a plotting failure
     return p, res, snaps, run, m
 
 

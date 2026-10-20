@@ -23,6 +23,16 @@ def p():
     return load()
 
 
+def test_T5_1b_derive_geometry_secondary_limited():
+    """Real belt BD52-2179-S (895 mm): the secondary closes before the belt reaches the hub."""
+    g = derive_geometry(np.radians(12.0), 0.895, 0.232, 0.026416, 0.09703, 0.02548, 0.8)
+    targets = dict(rp_min=0.034819, ratio_low=2.7867, rp_max=0.0760412, rs_min=0.0608329,
+                   x_p_stop=0.0175241, rs_low=0.09703)
+    for key, val in targets.items():
+        assert g[key] == pytest.approx(val, rel=1e-5), key
+    assert g["limited_by"] == "secondary" and g["x_s0"] == 0.0 and g["rp_hub"] == 0.026416
+
+
 def test_T5_1_derive_geometry():
     g = derive_geometry(np.radians(12.0), 0.88009, 0.232, 0.0315, 0.09703, 0.02548, 0.8)
     targets = dict(rs_low=0.0953211, ratio_low=3.02607, rp_max=0.0734165,
@@ -110,5 +120,5 @@ def test_T5_9_energy_conservation_free_primary(p):
 
 def test_T5_10_ratio_limits(p):
     g = p["derived"]["geometry"]
-    assert ratio_from_xp(0.0, g) == pytest.approx(3.02607, rel=1e-4)
+    assert ratio_from_xp(0.0, g) == pytest.approx(2.7867, rel=1e-4)
     assert ratio_from_xp(g["x_p_stop"], g) == pytest.approx(0.8, rel=1e-4)

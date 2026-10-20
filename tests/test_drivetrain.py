@@ -55,13 +55,14 @@ def test_T6_6_steady_speed_linear_engine():
 
 def test_T6_7_simulate_fixed_ratio_reaches_steady_speed():
     # c_a = 0.5 = (1/2) rho_air CdA, so CdA = 2 c_a / rho_air
-    p_c = load(overrides={"vehicle.CdA": 2.0 * 0.5 / 1.2})
+    p_c = load(overrides={"vehicle.CdA": 2.0 * 0.5 / 1.2, "vehicle.Crr": 0.015})  # spec 06 inputs
     t, w = simulate_fixed_ratio(lambda we: 40.0 - 0.05 * we, 0.05, 1.0, p_c,
                                 60.0, 1e-3)
     v_final = w[-1] * p_c["vehicle"]["tire_radius"] / p_c["vehicle"]["final_drive"]
     assert v_final == pytest.approx(21.744, rel=1e-3)
 
 
-def test_T6_8_rolling_resistance_torque_at_10_mps(p):
+def test_T6_8_rolling_resistance_torque_at_10_mps():
+    p = load(overrides={"vehicle.Crr": 0.015, "vehicle.CdA": 0.0})  # spec 06: rolling resistance only
     omega_s = 10.0 * p["vehicle"]["final_drive"] / p["vehicle"]["tire_radius"]
     assert road_load_torque(omega_s, p) == pytest.approx(1.32662, rel=1e-6)

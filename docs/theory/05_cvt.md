@@ -96,12 +96,12 @@ arise from the kinematics). (P4) follows from (P2) via `∂F_fw/∂x_p = n m_w �
 At full open, the primary groove is wider than the belt. The belt rides a free-running
 hub bearing at `r_p,min`, and the movable half travels an axial gap `g` before
 the flanks touch the belt. The coordinate `x_p ∈ [−g, s_p]` keeps (C1) as
-`r*_p = r_p,min + x_p/(2 tan β)`, so flank contact starts at `x_p = 0`. Spring
-compression and flyweight radius are measured from full open,
-`F_spring = F_p0 + k_p (x_p + g)` and `r_w = r_w0 + κ (x_p + g)`. (P3) and (P4)
-are therefore unchanged. The hub is a frictionless radial penalty with the flank stiffness `k_n`.
-`g` is a PLACEHOLDER (2 mm). With `g = 0` the secondary spring wedges the belt into the
-open primary, and the vehicle creeps at idle.
+`r*_p = r_p,min + x_p/(2 tan β)`, so flank contact starts at `x_p = 0`. Spring force and
+flyweight radius are referenced at contact, `F_spring = F_p0 + k_p x_p` and `r_w = r_w0 + κ x_p`,
+as in the team's CVT_model_v4 (preload = k(preLP + xPi) at contact, rFly at contact). (P3) and
+(P4) therefore hold at contact unchanged. `g` = xPi = 0.353 in = 8.97 mm (team workbook). The
+open groove must sit below the hub, `g ≥ 2 tan β (r_p,low − r_hub)` = 3.57 mm here, or the
+slack idle belt drags on the open flanks. The hub is a frictionless radial penalty with the flank stiffness `k_n`.
 
 ## 4. Secondary (helix cam + torsion + linear spring)
 
@@ -156,7 +156,7 @@ assumption (A5.4).
 | A5.4 | 435.63 N includes the torsion-spring axial share | ? (if not, ↓ secondary clamp by 54 N) |
 | A5.5 | Equal torque split between flanks in (S2) | exact only for symmetric slip; dynamics use actual τ_mov |
 | A5.6 | Hard stops modeled as stiff penalty (1e7 N/m, 5 % damping) | ? (stop impact loads depend on it) |
-| A5.7 | Frictionless hub bearing; engagement gap `g` = 2 mm placeholder | ? — `g` shifts the rpm at which torque first transmits |
+| A5.7 | Frictionless hub bearing; engagement gap `g` = 8.97 mm (team xPi) | ? — `g` sets how far the sheave travels before torque first transmits |
 
 ## 7. Implementation contract (`cvtsim/cvt/`)
 * `geometry.py`: `belt_length(r1, r2, C)`, `derive_geometry(beta, L, C, rp_min, rs_max, s_p, i_high) -> dict(rp_min, rp_max, rs_low, rs_min, rs_max, ratio_low, x_s0, x_p_stop, C, L)`,
@@ -178,4 +178,5 @@ assumption (A5.4).
 | T5.7 `secondary_static_force(0, 20)` | 435.63 + 10/0.0381 = 698.097 N | rel 1e-5 |
 | T5.8 `secondary_static_force(0.01, 0)` | 381.621 + 33.5366 + 3.930·(0.5236+0.26247)/0.0381 = 496.235 N | rel 1e-4 |
 | T5.9 energy: flyweight-primary free system (P1–P2 with T_eng = 0, no belt, no damping, no stops, start x_p inside the stroke) integrated with rk4 1 s: `𝒯 + U` conserved | rel 1e-6 |
-| T5.10 `ratio_from_xp(0)` = 3.02607, `ratio_from_xp(x_p,stop)` = 0.8 | rel 1e-4 |
+| T5.1b secondary-limited low end, `derive_geometry(12°, 0.895, 0.232, 0.026416, 0.09703, 0.02548, 0.8)` | rp_low 0.034819, ratio_low 2.7867, rp_max 0.0760412, rs_min 0.0608329, x_p_stop 0.0175241 | rel 1e-5 |
+| T5.10 `ratio_from_xp(0)` = 2.7867 (default parameters), `ratio_from_xp(x_p,stop)` = 0.8 | rel 1e-4 |

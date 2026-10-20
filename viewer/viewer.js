@@ -49,8 +49,8 @@ function prepare(D) {
     speed: ser.v ? ser.v.map(v => v * 3.6) : null,
     rpm: ser.w_e.map(w => w * 30 / Math.PI),
     xp: ser.x_p.map(v => v * 1e3), xs: ser.x_s.map(v => v * 1e3),
-    sp: ser.slip_p ? ser.slip_p.map(v => v * 100) : null,
-    ss: ser.slip_s ? ser.slip_s.map(v => v * 100) : null,
+    sp: ser.slip_p || null,   // mean flank slip velocity, belt minus sheave [m/s]
+    ss: ser.slip_s || null,
     mp: ser.cap_p ? ser.tq_p.map((v, i) => 100 * (1 - Math.abs(v) / ser.cap_p[i])) : null,
     ms: ser.cap_s ? ser.tq_s_fix.map((v, i) => 100 * (1 - Math.abs(v + ser.tq_s_mov[i]) / ser.cap_s[i])) : null,
   };
@@ -73,7 +73,7 @@ const RO = [
   ["F CLAMP S", t => sv("Fa_s", t), "N", 0],
   ["T TIGHT", t => sv("T_tight", t), "N", 0],
   ["T SLACK", t => sv("T_slack", t), "N", 0],
-  ["BELT TEMP", t => sv("T_belt", t), "°C", 1],
+  ["BELT TEMP", t => sv("T_belt", t) - 273.15, "°C", 1],   // T_belt is in K
 ];
 function buildReadouts() {
   const box = $("readouts"); box.innerHTML = "";
@@ -276,7 +276,7 @@ function drawPrimary(st) {
   const zbOpen = zMx(ro, -G.gap) + P, zcup = zbOpen + DRAW.Ls0p, zend = zcup + DRAW.cup;
   const zmin = zF(ro) - P - 0.006, zmax = zend + 0.006;
   const { c, w, h, V, rx } = cutView($("cv-pri"), zmin, zmax, ro + 0.012);
-  const u = st.xp + G.gap, zM = r => zMx(r, st.xp), zb = zM(ro) + P;
+  const u = st.xp, zM = r => zMx(r, st.xp), zb = zM(ro) + P;   // travel from belt contact
   drawAxis(c, V, zmin, zmax);
 
   // shaft
@@ -320,7 +320,7 @@ function drawPrimary(st) {
   arrow(c, V.x(zbOpen), V.y(ro + 0.006), V.x(zb), V.y(ro + 0.006));
   c.beginPath(); B.forEach(([z, r], i) => (i ? c.lineTo(V.x(z), V.y(r)) : c.moveTo(V.x(z), V.y(r))));
   c.strokeStyle = RED; c.lineWidth = 2; c.stroke();
-  info(c, rx + 8, 52, [["TRAVEL u = x_p + g", `${(u * 1e3).toFixed(2)} mm`, RED],
+  info(c, rx + 8, 52, [["TRAVEL x_p (0 = contact)", `${(u * 1e3).toFixed(2)} mm`, RED],
     ["SPRING FORCE", `${Fsp.toFixed(0)} N`], ["FLYWEIGHT RADIUS", `${(st.rw * 1e3).toFixed(1)} mm`, RED],
     ["BELT RADIUS", `${(st.rp * 1e3).toFixed(1)} mm`], ["SPRING RATE", `${(G.spring_p.k / 1e3).toFixed(2)} N/mm`]]);
   text(c, "fixed", V.x(zF(ro) - P / 2), V.y(ro) - 5, { al: "center", s: 10, col: MUTE });
@@ -410,7 +410,7 @@ function buildPlots() {
     ["RATIO", "s", T, [["r_s / r_p", d.ratio, PCOL.a]], ""],
     ["SHEAVE TRAVEL", "s", T, [["x_p [mm]", d.xp, PCOL.a], ["x_s [mm]", d.xs, PCOL.b]], "mm"],
     ["BELT TENSION", "s", T, [["T tight", ser.T_tight, PCOL.a], ["T slack", ser.T_slack, PCOL.b], ["T max", ser.T_max, PCOL.c]], "N"],
-    ["SLIP", "s", T, [["primary", d.sp, PCOL.a], ["secondary", d.ss, PCOL.b]], "%"],
+    ["SLIP VELOCITY", "s", T, [["primary", d.sp, PCOL.a], ["secondary", d.ss, PCOL.b]], "m/s"],
     ["TRACTION MARGIN", "s", T, [["primary", d.mp, PCOL.a], ["secondary", d.ms, PCOL.b]], "% of capacity"],
   ];
   for (const [title, xl, xs, lines, yl] of defs) {

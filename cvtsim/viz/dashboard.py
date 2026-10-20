@@ -20,14 +20,14 @@ def launch(res, CH, sh, p, metrics, run_name):
     geo = _col(res, CH, "rstar_s") / _col(res, CH, "rstar_p")
 
     fig = plt.figure(figsize=(16, 11.5))
-    S.header(fig, "cvtsim / launch", f"{run_name}   ·   full throttle from idle   ·   dt {p['sim']['dt']:.1e} s   ·   {int(p['sim']['belt_nodes'])} belt nodes")
+    S.header(fig, "cvtsim / launch", f"{run_name}   ·   full throttle from idle   ·   dt {p['sim']['dt']:.1e} s   ·   {int(p['sim']['belt_nodes'])} belt nodes   ·   * placeholder shaft geometry and static stress, no fatigue: illustrative only")
     gs = fig.add_gridspec(4, 6, height_ratios=[0.42, 1, 1, 1], hspace=0.55, wspace=0.45,
                           left=0.045, right=0.985, top=0.9, bottom=0.05)
     cards = [("engagement", f"{metrics['engage_rpm']:.0f}", "rpm", False),
              ("shift complete", "—" if np.isnan(metrics["t_shift_s"]) else f"{metrics['t_shift_s']:.2f}", "s", False),
              (f"speed @ {t[-1]:g} s", f"{metrics['v_end_kmh']:.1f}", "km/h", False),
-             ("peak bearing", f"{metrics['bearing_peak_N']:.0f}", "N", True),
-             ("peak von mises", f"{metrics['vm_peak_MPa']:.0f}", "MPa", True),
+             ("peak bearing*", f"{metrics['bearing_peak_N']:.0f}", "N", True),
+             ("peak von mises*", f"{metrics['vm_peak_MPa']:.0f}", "MPa", True),
              ("energy residual / w_in", f"{metrics['energy_resid']:.0e}", "", False)]
     for i, (lab, val, unit, acc) in enumerate(cards):
         S.card(fig.add_subplot(gs[0, i]), lab, val, unit, acc)
@@ -63,7 +63,7 @@ def launch(res, CH, sh, p, metrics, run_name):
     ax.plot(t, sh["M_prim"], label="M primary")
     ax.plot(t, np.abs(sh["T_sec"]), label="|T| secondary")
     ax.plot(t, sh["M_sec"], label="M secondary"); ax.legend(ncol=2)
-    ax = panel(3, 1, "peak von mises (kt)", ylabel="MPa")
+    ax = panel(3, 1, "peak von mises (kt)*", ylabel="MPa")
     ax.plot(t, sh["vm_prim"] / 1e6, label="primary shoulder")
     ax.plot(t, sh["vm_sec"] / 1e6, label="secondary shoulder"); ax.legend()
     ax = panel(3, 2, "energy closure", ylabel="J")
@@ -317,7 +317,7 @@ def traction(res, CH, p):
         _empty(ax, ["P_slip_p", "P_slip_s"])
     ax = _panel(fig, gs[1, 1], "belt temperature", "t [s]", "°C")
     if "T_belt" in CH:
-        ax.plot(t, _col(res, CH, "T_belt"))
+        ax.plot(t, _col(res, CH, "T_belt") - 273.15)  # channel is in K
     else:
         _empty(ax, ["T_belt"])
     ax = _panel(fig, gs[1, 2], "tire force vs limit", "t [s]", "N")

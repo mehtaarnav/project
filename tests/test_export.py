@@ -26,19 +26,34 @@ def test_sig_rounding():
     assert np.allclose(r, [123460.0, 0.00012346, 0.0, -9.8765], rtol=0, atol=1e-12)
 
 
+def test_write_viewer_accepts_shaft_histories(tmp_path):
+    """Contract with the real producer: shaft_histories output goes straight into write_viewer."""
+    from cvtsim.cvt.system import CH as SIM_CH, build, relax, simulate
+    from cvtsim.fe.shaft_loads import shaft_histories
+    p = params.load()
+    m = build(p)
+    relax(m)
+    res, snaps = simulate(m, 0.01, nout=50, n_frames=5)
+    sh = shaft_histories(res, p, SIM_CH)
+    d = json.loads(write_viewer(tmp_path, res, SIM_CH, snaps, p, sh).read_text())
+    assert set(d["shafts"]) == set(sh["cols"])
+    assert len(d["shafts"]["t"]) == len(d["series"]["t"])
+
+
 def test_write_viewer(tmp_path):
     p = params.load()
     res, snaps = _data()
     sh = {"t": np.linspace(0, 8, 300), "F_brg": np.arange(300) * 1.234567}
     d = json.loads(write_viewer(tmp_path, res, CH, snaps, p, sh).read_text())
     assert set(d) == {"meta", "geometry", "frames", "series", "shafts"}
-    assert d["meta"]["dt"] == 2.5e-7 and d["meta"]["tune"] == "default"
+    assert d["meta"]["dt"] == 1.25e-7 and d["meta"]["tune"] == "default"
     g = d["geometry"]
     assert g["C"] == 0.232 and g["beta_deg"] == 12 and g["n_weights"] == 3
     assert g["spring_s"]["F0"] == 381.62 and g["spring_p"]["k"] == 13208
-    assert abs(g["x_p_stop"] - 0.017819) < 1e-6
-    assert g["ramp"][0] == [0, 0.04445]
-    assert abs(g["ramp"][-1][1] - (0.04445 + 0.5 * 0.019819)) < 1e-5
+    assert abs(g["x_p_stop"] - 0.0175241) < 1e-6           # 05 T5.1b, secondary-limited
+    gap = 0.0089662                                          # travel from full open to belt contact
+    assert abs(g["ramp"][0][0] + gap) < 1e-9 and abs(g["ramp"][0][1] - (0.04445 - 0.5 * gap)) < 1e-6  # 5 s.f. export rounding
+    assert abs(g["ramp"][-1][1] - (0.04445 + 0.5 * 0.0175241)) < 1e-5
     assert abs(g["helix"][-1][1] - 0.02448 / 0.0381) < 1e-3
     s = d["series"]
     assert len(s["t"]) <= 2000 and len(s["t"]) == len(s["w_e"]) == len(s["x_p"])

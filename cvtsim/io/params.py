@@ -131,9 +131,9 @@ def load(path=DEFAULT, overrides=None, tune=None):
     if shim:
         pr["F_preload_spring"] = pr["F_preload"]
         pr["F_preload"] = pr["F_preload"] + pr["k_spring"] * shim
-    u_max = pr["engagement_gap"] + pr["stroke"]
+    u_max = pr["stroke"]  # ramp coordinate u = x_p from belt contact; u < 0 extrapolates linearly
     ramp = Ramp.from_spec(pr["ramp"], u_max) if "ramp" in pr else Ramp.straight(pr["r_w0"], pr["kappa"], u_max)
-    if "ramp" in pr:  # static 05 functions read the ramp at full open
+    if "ramp" in pr:  # static 05 functions read the ramp at belt contact (u = 0)
         pr["r_w0"], pr["kappa"] = float(ramp(0.0)[0]), float(ramp(0.0)[1])
     # secondary
     if "torsion_holes_deg" in s and s["torsion_preload_deg"] not in s["torsion_holes_deg"]:

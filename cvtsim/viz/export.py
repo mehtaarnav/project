@@ -38,6 +38,14 @@ def _table(d):
     return {k: _lst(np.asarray(v, dtype=float)[idx]) for k, v in d.items()}
 
 
+def _shaft_series(sh):
+    """1-D shaft/bearing series from cvtsim.fe.shaft_loads.shaft_histories (its `table`
+    holds t and every series column); plain dicts of equal-length arrays pass through."""
+    if "table" in sh and "cols" in sh:
+        return dict(zip(sh["cols"], np.asarray(sh["table"], dtype=float).T))
+    return sh
+
+
 def _round(x):
     if isinstance(x, dict):
         return {k: _round(v) for k, v in x.items()}
@@ -55,7 +63,7 @@ def _geometry(p):
     if "ramp" in pr:
         ramp = pr["ramp"]
     else:
-        u = np.linspace(0.0, gap + g["x_p_stop"], 21)
+        u = np.linspace(-gap, g["x_p_stop"], 21)  # travel from belt contact
         ramp = np.column_stack([u, pr["r_w0"] + pr["kappa"] * u]).tolist()
     if "helix" in sc:
         helix = sc["helix"]
@@ -98,7 +106,7 @@ def write_viewer(run_dir, res, CH, snaps, p, sh=None):
         "frames": {k: _lst(snaps[k]) for k in
                    ("t", "belt", "tension", "x_p", "x_s", "theta_e", "theta_s", "r_w")},
         "series": _table({c: res[:, i] for i, c in enumerate(CH)}),
-        "shafts": _table(sh) if sh else {},
+        "shafts": _table(_shaft_series(sh)) if sh else {},
     }
     path = run_dir / "viewer.json"
     path.write_text(json.dumps(out, separators=(",", ":")))

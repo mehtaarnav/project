@@ -44,6 +44,13 @@ Lb, Cc, b12 = 0.88009, 0.232, np.radians(12.0)
 rs_of = lambda r: brentq(lambda q: Lbelt(r, q, Cc) - Lb, 1e-6, r + 0.999*Cc)
 rp_lo = 0.0315; rs_lo = rs_of(rp_lo)
 rp_hi = brentq(lambda r: rs_of(r)/r - 0.8, rp_lo, 0.0914)
+# secondary-limited case: real belt BD52-2179-S (895 mm), hub 26.416 mm, secondary max 97.03 mm
+Lb2 = 0.895
+rs_of2 = lambda r: brentq(lambda q: Lbelt(r, q, Cc) - Lb2, 1e-6, r + 0.999*Cc)
+rp_lo2 = brentq(lambda r: rs_of2(r) - 0.09703, 0.026416, 0.0914)
+rp_hi2 = brentq(lambda r: rs_of2(r)/r - 0.8, rp_lo2, 0.0914)
+out.update(geo2_rp_low=rp_lo2, geo2_ratio_low=0.09703/rp_lo2, geo2_rp_max=rp_hi2,
+           geo2_rs_min=rs_of2(rp_hi2), geo2_x_p_stop=2*np.tan(b12)*(rp_hi2 - rp_lo2))
 out.update(geo_rs_low=rs_lo, geo_ratio_low=rs_lo/rp_lo, geo_rp_max=rp_hi, geo_rs_min=rs_of(rp_hi),
            geo_x_p_stop=2*np.tan(b12)*(rp_hi - rp_lo), geo_x_s0=2*np.tan(b12)*(0.09703 - rs_lo),
            geo_rp_at_ratio3=brentq(lambda r: rs_of(r)/r - 3.0, 0.02, 0.05))
@@ -115,7 +122,7 @@ print(f"{'t9_6_tire_slip':32s} {s9(v9):.17g}")
 print(f"{'t9_7_slip_T200_v10':32s} {s09*arctanh(200/rt9/(mut9*m9*g9*bL9)):.17g}")
 print(f"{'t9_7_traction_limit_N':32s} {mut9*m9*g9*bL9:.17g}")
 # T9.8 belt heating: m = rho A L, C_b = m c_p, A_s = L (b + 2 h_c), tau = C_b/(h A_s)
-Lb9 = 0.88009
+Lb9 = 0.895  # belt pitch length, dr26_default.yaml
 Cb9 = 1150.0*3.0e-4*Lb9*1700.0
 hA9 = 40.0*Lb9*(0.030 + 2*0.012)
 print(f"{'t9_8_C_b':32s} {Cb9:.17g}")

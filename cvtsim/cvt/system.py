@@ -28,7 +28,7 @@ PRM = ["m_node", "L0", "EA", "eta", "EI", "cb", "beta", "k_n", "c_n", "mu", "v_e
        "J_s", "J_m", "m_m", "k_l", "F_l0", "k_t", "th_t0", "c_s", "s_s",
        "k_stop", "c_stop_p", "c_stop_s", "m_veh", "r_t", "G", "Crr", "rpm_cut", "gov_band",
        "g_p", "k_hub", "rigid", "eta_d", "c_a", "mu_t", "s0", "v_min", "b_L", "h_L",
-       "C_b", "hA", "f_b", "T_amb"]
+       "C_b", "hA", "f_b", "T_amb", "rp_hub"]
 # state vector
 ST = ["w_e", "x_p", "xd_p", "w_s", "x_s", "xd_s", "t", "theta_e", "theta_s", "v", "T_belt", "a_x"]
 
@@ -68,7 +68,8 @@ def _span_tensions(X, T, C):
 
 @maybe_njit
 def _contact_stats(X, V, cx, w, N_fl):
-    """Effective wrap radius (normal-force weighted) and mean tangential slip ratio."""
+    """Effective wrap radius and mean tangential slip velocity, belt minus sheave [m/s]
+    (both weighted by flank normal force)."""
     sn = 0.0; sr = 0.0; ss = 0.0
     for i in range(X.shape[0]):
         if N_fl[i] > 0.0:
@@ -146,7 +147,7 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
      J_s, J_m, m_m, k_l, F_l0, k_t, th_t0, c_s, s_s,
      k_stop, c_stop_p, c_stop_s, m_veh, r_t, G, Crr, rpm_cut, gov_band,
      g_p, k_hub, rigid, eta_d, c_a, mu_t, s0, v_min, b_L, h_L,
-     C_b, hA, f_b, T_amb) = prm[:56]
+     C_b, hA, f_b, T_amb, rp_hub) = prm[:57]
     tb = np.tan(beta)
     w_e, x_p, xd_p, w_s, x_s, xd_s, t = st[0], st[1], st[2], st[3], st[4], st[5], st[6]
     th_e, th_s, v, T_b, a_prev = st[7], st[8], st[9], st[10], st[11]
@@ -169,12 +170,12 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
             X, V, 0.0, 0.0, rsp, rsp_d, beta, k_n, c_n, mu, v_eps, rout_p, w_e, w_e)
         fs, Fas, tqsf, tqsm, Pfs, Ups, dls, Nfs = sheave_contact(
             X, V, C, 0.0, rss, rss_d, beta, k_n, c_n, mu, v_eps, rout_s, w_s, w_mov_s)
-        # free-running hub bearing under the open primary: frictionless radial support at rp_min
+        # free-running hub bearing under the open primary: frictionless radial support at rp_hub
         U_hub = 0.0
         for i in range(N):
             r = np.sqrt(X[i, 0] ** 2 + X[i, 1] ** 2)
-            if r < rp_min:
-                pen = rp_min - r
+            if r < rp_hub:
+                pen = rp_hub - r
                 fp[i, 0] += k_hub * pen * X[i, 0] / r
                 fp[i, 1] += k_hub * pen * X[i, 1] / r
                 U_hub += 0.5 * k_hub * pen * pen
@@ -192,8 +193,9 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
                     dd = (rsd - rdot) * np.sin(beta)
                     Pn += 2.0 * (Ni - k_n * di) * dd
         T_e, T_gov = engine_torque(w_e, eng_w, eng_T, rpm_cut, gov_band)
-        # primary (P1'),(P2'); travel from fully open u = x_p + g_p
-        u = x_p + g_p
+        # primary (P1'),(P2'); travel u = x_p measured from belt contact (CVT_model_v4 convention),
+        # x_p in [-g_p, s_p]; spring force and flyweight radius are referenced at contact
+        u = x_p
         Fst_p, Ust_p, Pst_p = _stop(x_p, xd_p, -g_p, s_p, k_stop, c_stop_p)
         F_spr_p = F_p0 + k_p * u
         wd_e, xdd_p, r_w, kap, Jp, Mx_p = primary_accel(
@@ -333,7 +335,7 @@ def build(p, dt=None, kn_scale=1.0):
         rpm_cut=eng["rpm_cut"], gov_band=eng["governor_band"], g_p=pr["engagement_gap"], k_hub=k_n,
         rigid=float(rigid), eta_d=veh["eta"], c_a=0.5 * veh["rho_air"] * veh["CdA"], mu_t=veh["mu_t"],
         s0=veh["s0"], v_min=veh["v_min"], b_L=veh["b_over_L"], h_L=veh["h_cg"] / L_wb,
-        C_b=th["C_b"], hA=th["hA"], f_b=b["f_slip_heat"], T_amb=th["T_amb"])
+        C_b=th["C_b"], hA=th["hA"], f_b=b["f_slip_heat"], T_amb=th["T_amb"], rp_hub=g["rp_hub"])
     prm = np.array([vals[k] for k in PRM], dtype=np.float64)
     st = np.zeros(len(ST))
     st[0] = eng["idle_rpm"] * np.pi / 30

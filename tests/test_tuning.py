@@ -25,7 +25,15 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 RPM = 2.0 * math.pi / 60.0
 # "new vehicle terms off": 06 rigid driveline, lossless, no aero, no wheel inertia, 06 governor taper
 OFF = {"vehicle.model": "rigid", "vehicle.eta": 1.0, "vehicle.J_wheels": 0.0, "vehicle.CdA": 0.0,
-       "engine.governor_band": 200.0}
+       "engine.governor_band": 200.0,
+       # inputs frozen at commit 7268716, when the reference series was generated
+       "geometry.belt_pitch_length": 0.88009, "geometry.rp_mech_min": 0.0315, "vehicle.Crr": 0.015,
+       "sim.dt": 2.5e-7,
+       # the reference referenced spring and ramp at full open with a 2 mm gap; restate them at contact
+       "primary.engagement_gap": 0.002, "primary.F_preload": 683.04 + 13208.0 * 0.002,
+       "primary.ramp": {"type": "straight", "r_w0": 0.04445 + 0.5 * 0.002, "kappa": 0.5},
+       "engine.rpm": [2400, 2600, 2800, 3000, 3200, 3400, 3600],
+       "engine.torque": [25.08, 24.54, 23.59, 22.51, 20.88, 19.66, 18.30]}
 
 
 @pytest.fixture(scope="module")
@@ -198,8 +206,13 @@ def test_T9_9_default_tune_reproduces_prelibrary_launch():
     res, _ = _launch(load(tune="default", overrides=OFF))
     assert res.shape[0] == ref.shape[0]
     for j, k in enumerate(names):
-        scale = max(np.abs(ref[:, j]).max(), 1e-12)
-        assert np.abs(res[:, CH.index(k)] - ref[:, j]).max() <= 1e-6 * scale, k
+        a, b = res[:, CH.index(k)], ref[:, j]
+        if k == "E_mech":
+            # potential energy is defined up to a constant: the spring reference moved from full
+            # open to belt contact (F_p0 g + k g^2/2 = 1.392496 J), so compare energy changes
+            a, b = a - a[0], b - b[0]
+        scale = max(np.abs(b).max(), 1e-12)
+        assert np.abs(a - b).max() <= 1e-6 * scale, k
 
 
 def test_default_tune_energy_channels_and_snapshots():

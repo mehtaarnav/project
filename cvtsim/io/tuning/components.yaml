@@ -79,6 +79,8 @@ helixes:
     interp: {value: linear, source: "09 sec 2 (h' linear between table points)"}
 
 vehicle_surfaces:
+  offroad:
+    Crr: {value: 0.02, source: "SAE 2025-01-5069 (off-road tires, 0.01-0.02 dynamic)"}
   brief:
     Crr: {value: 0.015, source: BRIEF}
     mu_t: {value: 0.7, source: "ASSUMED (09 sec 3)"}

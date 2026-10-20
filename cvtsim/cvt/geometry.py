@@ -24,20 +24,29 @@ def derive_geometry(beta, L, C, rp_min, rs_max, s_p, i_high):
     """Operating geometry from measured hardware (05_cvt.md section 2).
 
     beta: flank half-angle [rad]; L: belt pitch length; C: centre distance;
-    rp_min: primary minimum pitch radius (belt on the hub, sheave open);
+    rp_min: primary hub radius (smallest radius the belt can reach);
     rs_max: secondary maximum pitch radius (sheave fully closed);
     s_p: primary mechanical stroke; i_high: overdrive ratio stop (r_s/r_p).
+
+    The low end is the more restrictive of the two mechanical limits (as boundaryGeo in the
+    team's CVT_model_v4): either the belt reaches the primary hub, or the secondary closes
+    first and the belt rests on the primary at a larger radius. Returned `rp_min` is the
+    operating low-ratio primary radius; `rp_hub` is the hub radius.
     """
     tb = np.tan(beta)
-    rs_low = _rs_closure(rp_min, L, C)
-    if rs_low > rs_max:
-        raise ValueError("belt too long for the secondary at low ratio")
+    if _rs_closure(rp_min, L, C) <= rs_max:
+        rp_low = rp_min                                   # hub-limited
+    else:                                                 # secondary-limited
+        rp_low = brentq(lambda rp: _rs_closure(rp, L, C) - rs_max, rp_min, rp_min + s_p / (2.0 * tb),
+                        xtol=1e-15, rtol=1e-15, maxiter=500)
+    rs_low = _rs_closure(rp_low, L, C) if rp_low == rp_min else rs_max
     rp_max = brentq(lambda rp: _rs_closure(rp, L, C) / rp - i_high,
-                    rp_min, rp_min + s_p / (2.0 * tb), xtol=1e-15, rtol=1e-15, maxiter=500)
+                    rp_low, rp_low + s_p / (2.0 * tb), xtol=1e-15, rtol=1e-15, maxiter=500)
     rs_min = _rs_closure(rp_max, L, C)
-    return dict(rp_min=rp_min, rp_max=rp_max, rs_low=rs_low, rs_min=rs_min, rs_max=rs_max,
-                ratio_low=rs_low / rp_min, x_s0=2.0 * tb * (rs_max - rs_low),
-                x_p_stop=2.0 * tb * (rp_max - rp_min), C=C, L=L, beta=beta, tan_beta=tb)
+    return dict(rp_min=rp_low, rp_hub=rp_min, rp_max=rp_max, rs_low=rs_low, rs_min=rs_min,
+                rs_max=rs_max, ratio_low=rs_low / rp_low, x_s0=2.0 * tb * (rs_max - rs_low),
+                x_p_stop=2.0 * tb * (rp_max - rp_low), C=C, L=L, beta=beta, tan_beta=tb,
+                limited_by="hub" if rp_low == rp_min else "secondary")
 
 
 def r_star_primary(x_p, g):
