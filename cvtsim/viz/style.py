@@ -34,7 +34,7 @@ def use():
         "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6, "grid.linestyle": (0, (1, 3)),
         "axes.spines.top": False, "axes.spines.right": False,
         "xtick.color": MUTED, "ytick.color": MUTED, "text.color": WHITE,
-        "font.family": "Space Mono", "font.size": 8.5,
+        "font.family": ["Space Mono", "DejaVu Sans Mono"], "font.size": 8.5,
         "axes.titlesize": 11, "axes.titlelocation": "left", "axes.titlepad": 10,
         "axes.labelsize": 8, "legend.fontsize": 7.5, "legend.frameon": False,
         "axes.prop_cycle": plt.cycler(color=SERIES),
