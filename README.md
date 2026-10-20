@@ -14,3 +14,13 @@ pip install -e .[fast,test]
 pytest -q
 python examples/launch.py
 ```
+
+## Choosing parts
+
+```
+python -m cvtsim.app        # open http://localhost:8765
+```
+
+Pick each spring, flyweight set, ramp, helix and surface from a dropdown, then start a launch.
+Results appear in the run table with links to the dashboard and the mechanism viewer. To add a
+part, add an entry to `cvtsim/io/tuning/components.yaml` and it appears in the dropdown.

@@ -7,3 +7,4 @@ runs/*/series.csv.gz
 reference/
 cvtsim/io/CVT_Inputs.xlsx
 runs/*/snaps.npz
+local_tunes/

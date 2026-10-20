@@ -8,6 +8,7 @@ Each simulation is a tracked run (group "tune") with config, series, snapshots a
 `compare` adds a summary run holding a markdown table and an overlay figure.
 """
 import argparse
+from pathlib import Path
 
 import numpy as np
 
@@ -65,7 +66,7 @@ def run_tune(name, t_end, surface=None, dt=None, nout=None, n_frames=400, dashbo
     relax(model)
     res, snaps = simulate(model, t_end, nout=nout, n_frames=n_frames)
     cfg = dict(base=load_raw(), **load_tune_raw(name))
-    run = runs.Run(f"tune-{name}" + (f"-{surface}" if surface else ""), cfg,
+    run = runs.Run(f"tune-{Path(name).stem}" + (f"-{surface}" if surface else ""), cfg,
                    overrides=dict(overrides, dt=model["h"], t_end=t_end), group="tune", tags=(name,))
     run.series(CH, res)
     np.savez_compressed(run.dir / "snaps.npz", **snaps)
