@@ -16,7 +16,7 @@ from cvtsim.belt.belt import (
 )
 
 EA = 243.5e3
-RHOA = 0.345  # kg/m (task spec, T3.2)
+RHOA = 0.345  # kg/m (T3.2)
 
 
 # ---------------------------------------------------------------- helpers

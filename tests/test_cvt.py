@@ -47,9 +47,8 @@ def test_T5_4_negative_stiffness_onset_kappa_half(p):
 def net_restoring_stiffness(p, rpm_val, x0=0.01, h=1e-7):
     """k_net = d(F_spring - F_fw)/dx_p by central difference (P4).
 
-    The restoring force on the movable half is F_spring - F_fw, so its slope is
-    k_net = k_p - n m_w kappa^2 omega^2. The literal sign of d(F_fw - F_spring)/dx_p
-    is the opposite of this (see report); the test checks k_net as defined in P4.
+    The restoring force on the movable half is F_spring - F_fw, so
+    k_net = k_p - n m_w kappa^2 omega^2.
     """
     w = rpm_val * RPM
 
