@@ -84,3 +84,41 @@ def kt_bend(D, d, r):
     C=[0.947+1.206*s-0.131*q, 0.022-3.405*s+0.915*q, 0.869+1.777*s-0.555*q, -0.810+0.422*s-0.260*q]
     x=2*t/D; return C[0]+C[1]*x+C[2]*x**2+C[3]*x**3
 print(f"{'kt_bend_D1.2_r0.1':32s} {kt_bend(1.2,1.0,0.1):.6g}")
+
+# --- 09: profiled ramp and helix, vehicle with tire slip, belt heating
+from numpy import arctanh
+n9, mw9, rw9 = 3, 0.275 + 0.0387, 0.04445
+w3k = 3000*2*np.pi/60
+u9 = 0.01  # T9.2 curved ramp r_w = r_w0 + 0.4 u + 4 u^2, kappa = 0.4 + 8 u
+print(f"{'t9_2_F_fw_u10mm_3000rpm':32s} {n9*mw9*(rw9 + 0.4*u9 + 4*u9**2)*(0.4 + 8*u9)*w3k**2:.17g}")
+rc9 = 0.0381  # T9.4 helix: 45 deg to 10 mm, then 35 deg; h' = 1/(r_c tan alpha)
+hp45, hp35 = 1/(rc9*np.tan(np.radians(45))), 1/(rc9*np.tan(np.radians(35)))
+h9 = lambda x: x*hp45 if x <= 0.01 else 0.01*hp45 + (x - 0.01)*hp35
+for xmm in (5, 15, 20):
+    print(f"{f't9_4_h_{xmm}mm':32s} {h9(xmm/1e3):.17g}")
+print(f"{'t9_4_hprime_15mm':32s} {hp35:.17g}")
+Fl0_9 = 435.63 - 3.930*np.radians(30)/(rc9*np.tan(np.radians(45)))
+print(f"{'t9_4_Fs_15mm_20Nm':32s} {Fl0_9 + 3353.66*0.015 + (20/2 + 3.930*(np.radians(30) + h9(0.015)))*hp35:.17g}")
+# T9.6 fixed ratio, linear engine T = a - b w; dirt Crr, CdA 0.9, eta 0.9
+a9, b9, R9, G9, rt9, m9, g9 = 40.0, 0.05, 1.0, 8.1, 0.2921, 250.0, 9.81
+Crr9, ca9, eta9, mut9, s09, bL9 = 0.06, 0.5*1.2*0.9, 0.90, 0.7, 0.08, 0.60
+k9 = R9*G9/rt9
+A9, B9, C9 = ca9, eta9*b9*k9**2, Crr9*m9*g9 - eta9*a9*k9
+print(f"{'t9_6_v_quadratic_noslip':32s} {(-B9 + np.sqrt(B9**2 - 4*A9*C9))/(2*A9):.17g}")
+# with the tire: wheel speed v (1+s), s = s0 artanh(F/(mu_t N_r)), N_r = m g b/L at steady state
+F9 = lambda v: Crr9*m9*g9 + ca9*v**2
+s9 = lambda v: s09*arctanh(F9(v)/(mut9*m9*g9*bL9))
+v9 = brentq(lambda v: eta9*k9*(a9 - b9*k9*v*(1 + s9(v))) - F9(v), 1.0, 30.0, xtol=1e-14)
+print(f"{'t9_6_v_with_slip':32s} {v9:.17g}")
+print(f"{'t9_6_tire_slip':32s} {s9(v9):.17g}")
+# T9.7 tire on a dyno at v = 10 m/s, axle torque 200 N m: F_x = T/r_t, s = s0 artanh(F_x/(mu_t m g b/L))
+print(f"{'t9_7_slip_T200_v10':32s} {s09*arctanh(200/rt9/(mut9*m9*g9*bL9)):.17g}")
+print(f"{'t9_7_traction_limit_N':32s} {mut9*m9*g9*bL9:.17g}")
+# T9.8 belt heating: m = rho A L, C_b = m c_p, A_s = L (b + 2 h_c), tau = C_b/(h A_s)
+Lb9 = 0.88009
+Cb9 = 1150.0*3.0e-4*Lb9*1700.0
+hA9 = 40.0*Lb9*(0.030 + 2*0.012)
+print(f"{'t9_8_C_b':32s} {Cb9:.17g}")
+print(f"{'t9_8_hA':32s} {hA9:.17g}")
+print(f"{'t9_8_tau':32s} {Cb9/hA9:.17g}")
+print(f"{'t9_8_rise_fraction_at_tau':32s} {1 - np.exp(-1):.17g}")

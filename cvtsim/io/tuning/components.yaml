@@ -1,0 +1,96 @@
+# Tunable CVT and vehicle parts (docs/theory/09_tuning_vehicle_belt.md, section 5).
+# Every value carries a source tag (docs/WORKFLOW.md section 4). Parts tagged
+# "PLACEHOLDER illustrative" are NOT catalogue parts: they exist to exercise the tune
+# library and show the direction of a change. Replace them with measured parts.
+
+primary_springs:
+  brief:
+    description: "DR26 primary spring as given in the brief"
+    k_spring: {value: 13208.0, unit: N/m, source: BRIEF}
+    F_preload: {value: 683.04, unit: N, source: BRIEF}
+  stiff_illustrative:
+    description: "stiffer rate, same preload (one change against brief)"
+    k_spring: {value: 16000.0, unit: N/m, source: "PLACEHOLDER illustrative (+21 % rate; not a catalogue spring)"}
+    F_preload: {value: 683.04, unit: N, source: "BRIEF (unchanged)"}
+
+flyweights:
+  brief:
+    description: "three weights with covers, as given in the brief"
+    n_weights: {value: 3, source: BRIEF}
+    m_weight: {value: 0.275, unit: kg, source: BRIEF}
+    m_cover: {value: 0.0387, unit: kg, source: "BRIEF (per weight, moves with weight)"}
+  heavy_illustrative:
+    description: "heavier weights, same covers (one change against brief)"
+    n_weights: {value: 3, source: BRIEF}
+    m_weight: {value: 0.300, unit: kg, source: "PLACEHOLDER illustrative (+25 g per weight; not a catalogue part)"}
+    m_cover: {value: 0.0387, unit: kg, source: "BRIEF (unchanged)"}
+
+ramps:
+  straight_45:
+    description: "straight 45 deg ramp, roller wedged between two faces (05 sec 3)"
+    type: {value: straight, source: "BRIEF straight-ramp assumption"}
+    r_w0: {value: 0.04445, unit: m, source: BRIEF}
+    kappa: {value: 0.5, source: "DERIVED 1/(2 tan 45 deg) (05 sec 3); UNVERIFIED vs CAD"}
+  curved_T9_2:
+    description: "r_w = r_w0 + 0.4 u + 4 u^2, the spec 09 T9.2 test profile"
+    type: {value: poly, source: "09 sec 7 T9.2"}
+    coeffs: {value: [0.04445, 0.4, 4.0], source: "PLACEHOLDER illustrative (09 T9.2 test curve; r_w0 BRIEF)"}
+  progressive_illustrative:
+    description: "the T9.2 curve sampled every 4 mm of travel, PCHIP-interpolated"
+    type: {value: table, source: "09 sec 1"}
+    table: {value: [[0.0, 0.04445], [0.004, 0.046114], [0.008, 0.047906], [0.012, 0.049826],
+                    [0.016, 0.051874], [0.020, 0.05405], [0.024, 0.056354], [0.028, 0.058786]],
+            unit: "[m, m]", source: "PLACEHOLDER illustrative (r_w0 BRIEF; shape not from CAD)"}
+
+secondary_springs:
+  brief:
+    description: "linear spring; the brief's 435.63 N equivalent preload includes the torsion share at the brief set-up"
+    k_linear: {value: 3353.66, unit: N/m, source: BRIEF}
+    F_preload_equiv: {value: 435.63, unit: N, source: "BRIEF equivalent preload (05 A5.4)"}
+    equiv_reference:
+      note: "set-up at which the equivalent preload was quoted; F_l0 = 435.63 - k_t theta_t0 / (r_c tan alpha) = 381.621 N (05 sec 4)"
+      k_torsion: {value: 3.930, unit: N*m/rad, source: BRIEF}
+      torsion_preload_deg: {value: 30.0, source: BRIEF}
+      r_cam: {value: 0.0381, unit: m, source: BRIEF}
+      cam_angle_deg: {value: 45.0, source: BRIEF}
+
+torsion_springs:
+  brief:
+    description: "torsion spring; pretwist chosen from the hole positions"
+    k_torsion: {value: 3.930, unit: N*m/rad, source: BRIEF}
+    torsion_holes_deg: {value: [30.0], source: "BRIEF (30 deg); the other hole positions were not supplied"}
+
+helixes:
+  straight_45:
+    description: "single 45 deg helix"
+    r_cam: {value: 0.0381, unit: m, source: BRIEF}
+    angles: {value: [[0.0, 45.0]], unit: "[m, deg]", source: BRIEF}
+    interp: {value: steps, source: "09 sec 2"}
+  two_angle_45_35:
+    description: "45 deg to 10 mm of opening, then 35 deg (the spec 09 T9.4 helix)"
+    r_cam: {value: 0.0381, unit: m, source: BRIEF}
+    angles: {value: [[0.0, 45.0], [0.010, 35.0]], unit: "[m, deg]", source: "PLACEHOLDER illustrative (09 T9.4 test helix)"}
+    interp: {value: steps, source: "09 sec 2"}
+    blend: {value: 0.002, unit: m, source: "ASSUMED transition length of the angle break (cvtsim/cvt/profiles.py)"}
+  progressive_linear:
+    description: "angle falling linearly from 45 deg to 35 deg over the stroke"
+    r_cam: {value: 0.0381, unit: m, source: BRIEF}
+    angles: {value: [[0.0, 45.0], [0.02448, 35.0]], unit: "[m, deg]", source: "PLACEHOLDER illustrative"}
+    interp: {value: linear, source: "09 sec 2 (h' linear between table points)"}
+
+vehicle_surfaces:
+  brief:
+    Crr: {value: 0.015, source: BRIEF}
+    mu_t: {value: 0.7, source: "ASSUMED (09 sec 3)"}
+  pavement:
+    Crr: {value: 0.03, source: "ASSUMED preset (09 sec 3)"}
+    mu_t: {value: 0.7, source: "PLACEHOLDER (09 gives mu_t for dirt only)"}
+  dirt:
+    Crr: {value: 0.06, source: "ASSUMED preset (09 sec 3)"}
+    mu_t: {value: 0.7, source: "ASSUMED dirt 0.6-0.8 (09 sec 3)"}
+  grass:
+    Crr: {value: 0.10, source: "ASSUMED preset (09 sec 3)"}
+    mu_t: {value: 0.7, source: "PLACEHOLDER (09 gives mu_t for dirt only)"}
+  sand:
+    Crr: {value: 0.20, source: "ASSUMED preset (09 sec 3)"}
+    mu_t: {value: 0.7, source: "PLACEHOLDER (09 gives mu_t for dirt only)"}

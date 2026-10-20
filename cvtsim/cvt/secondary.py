@@ -31,3 +31,11 @@ def secondary_spring_force(x_s, p):
     ph, th0 = d["p_h"], d["theta_t0"]
     return -(d["F_l0"] + s["k_linear"] * x_s
              + s["k_torsion"] * (th0 + x_s / ph) / ph)
+
+
+def secondary_static_force_helix(x_s, Tq, p):
+    """Static closing force F_s(x, T) = F_l0 + k_l x + [T/2 + k_t(theta_t0 + h(x))] h'(x)
+    with the helix profile (09 section 2)."""
+    s, d = p["secondary"], p["derived"]
+    h, hp, _ = d["helix"](x_s)
+    return d["F_l0"] + s["k_linear"] * x_s + (Tq / 2.0 + s["k_torsion"] * (d["theta_t0"] + h)) * hp

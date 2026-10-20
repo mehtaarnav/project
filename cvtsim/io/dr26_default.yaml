@@ -5,7 +5,8 @@
 engine:
   rpm:    {value: [2400, 2600, 2800, 3000, 3200, 3400, 3600], source: "BRIEF Kohler CH440 team-restricted chart"}
   torque: {value: [25.08, 24.54, 23.59, 22.51, 20.88, 19.66, 18.30], unit: N*m, source: "BRIEF; below 2400 rpm UNVERIFIED -> held constant (06 A6.1)"}
-  rpm_cut: {value: 3800, unit: rpm, source: "ASSUMED governor ramp-to-zero 3600->3800 (06 A6.2)"}
+  rpm_cut: {value: 3800, unit: rpm, source: "team rule / ASSUMED governed speed: zero torque here (09 sec 3; 06 A6.2)"}
+  governor_band: {value: 100, unit: rpm, source: "ASSUMED linear torque cut below rpm_cut (09 sec 3). Chart held at 18.30 N*m from 3600 rpm up to the cut (UNVERIFIED). 200 reproduces the 06 taper 3600->3800"}
   J_e: {value: 0.05, unit: kg*m^2, source: "PLACEHOLDER engine+flywheel+fixed primary inertia"}
   idle_rpm: {value: 1500, unit: rpm, source: "PLACEHOLDER initial speed below derived engagement (1725.7 rpm)"}
 
@@ -67,14 +68,27 @@ belt:
   mu: {value: 0.3, source: "ASSUMED (brief)"}
   v_eps: {value: 0.05, unit: m/s, source: "PLACEHOLDER friction regularization; convergence-checked"}
   normal_damping_ratio: {value: 0.05, source: "PLACEHOLDER flank damping fraction of critical"}
+  c_p: {value: 1700.0, unit: J/(kg*K), source: "ASSUMED rubber specific heat (09 sec 4)"}
+  h_conv: {value: 40.0, unit: W/(m^2*K), source: "ASSUMED film coefficient (09 sec 4)"}
+  f_slip_heat: {value: 0.5, source: "ASSUMED belt share of flank slip heat (09 sec 4)"}
+  T_amb_C: {value: 40.0, unit: degC, source: "ASSUMED ambient in the CVT case (09 sec 4); converted to K on load"}
 
 vehicle:
   mass: {value: 250.0, unit: kg, source: BRIEF}
   final_drive: {value: 8.1, source: BRIEF}
   tire_radius: {value: 0.2921, unit: m, source: BRIEF}
   Crr: {value: 0.015, source: BRIEF}
-  CdA: {value: 0.0, unit: m^2, source: "not supplied; aero neglected (06 A6.4)"}
-  rho_air: {value: 1.2, unit: kg/m^3, source: "standard air (unused while CdA=0)"}
+  CdA: {value: 0.0, unit: m^2, source: "not supplied by the brief; aero neglected here (06 A6.4). Tunes apply the 09 sec 3 ASSUMED 0.9"}
+  rho_air: {value: 1.2, unit: kg/m^3, source: "standard air"}
+  model: {value: tire, source: "09 sec 3: vehicle speed is its own state, coupled by tire slip. 'rigid' = 06 rigid driveline (v = w_s r_t/G)"}
+  eta: {value: 0.90, source: "ASSUMED gearbox + chain efficiency 0.88-0.95 (09 sec 3)"}
+  J_wheels: {value: 1.2, unit: kg*m^2, source: "ASSUMED four wheels, 0.25-0.45 each (09 sec 3)"}
+  mu_t: {value: 0.7, source: "ASSUMED tire peak friction, dirt 0.6-0.8 (09 sec 3)"}
+  s0: {value: 0.08, source: "ASSUMED slip scale, about 76 % of peak force at s = s0 (09 sec 3)"}
+  v_min: {value: 0.5, unit: m/s, source: "numerical slip-ratio floor (09 sec 3)"}
+  b_over_L: {value: 0.60, source: "PLACEHOLDER static rear weight fraction (09 sec 3)"}
+  h_cg: {value: 0.50, unit: m, source: "PLACEHOLDER centre-of-gravity height (09 sec 3)"}
+  wheelbase: {value: 1.50, unit: m, source: "PLACEHOLDER (09 sec 3)"}
 
 shafts:  # ALL PLACEHOLDER geometry (07 A7.4); z measured outboard from engine/bearing side
   material: {E: 200.0e9, nu: 0.3, source: "PLACEHOLDER generic steel"}

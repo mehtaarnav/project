@@ -15,7 +15,7 @@ def launch(res, CH, sh, p, metrics, run_name):
     t = _col(res, CH, "t")
     rpm = _col(res, CH, "w_e") * 30 / np.pi
     ws = _col(res, CH, "w_s")
-    v = ws * p["vehicle"]["tire_radius"] / p["vehicle"]["final_drive"] * 3.6
+    v = (_col(res, CH, "v") if "v" in CH else ws * p["vehicle"]["tire_radius"] / p["vehicle"]["final_drive"]) * 3.6
     ratio = np.where(np.abs(ws) > 1.0, _col(res, CH, "w_e") / np.where(np.abs(ws) > 1.0, ws, 1.0), np.nan)
     geo = _col(res, CH, "rstar_s") / _col(res, CH, "rstar_p")
 
