@@ -1,4 +1,4 @@
-# cvtsim theory specification (Phase 0)
+# cvtsim theory specification
 
 This directory is the math authority for `cvtsim`. Code must implement these
 equations; tests must check the NUMERIC TEST TARGETS given here. Every target
@@ -17,6 +17,10 @@ forms only — run it to reproduce).
 | [08_fe_tet10.md](08_fe_tet10.md) | linear static 10-node tet FE | `cvtsim.fe.tet10` |
 | [09_tuning_vehicle_belt.md](09_tuning_vehicle_belt.md) | profiled ramp/helix, tire vehicle, belt heating, tunes | `cvtsim.cvt.profiles`, `cvtsim.cvt.system`, `cvtsim.tune` |
 | [11_engine_friction_uq.md](11_engine_friction_uq.md) | firing pulses, PTO torsion, clutch friction, uncertainty bands | `cvtsim.drivetrain.pulses`, `cvtsim.cvt.system` |
+| [10_validation.md](10_validation.md) | measured launch and top-speed bands | — |
+| [12_fatigue_bearings.md](12_fatigue_bearings.md) | rainflow, Goodman, Miner, ISO 281, launch durability | `cvtsim.fe.fatigue`, `cvtsim.fe.bearings`, `cvtsim.post.durability` |
+| [13_belt_life_efficiency.md](13_belt_life_efficiency.md) | belt life and CVT efficiency | `cvtsim.post` |
+| [14_scenarios.md](14_scenarios.md) | hill climb, backshift, landing | `cvtsim.cvt.system.schedule` |
 | [literature.md](literature.md) | literature review + verification status | — |
 
 ## Global conventions (all modules)
@@ -31,7 +35,8 @@ forms only — run it to reproduce).
 * **Belt plane model:** belt nodes move in the X–Y plane only. Axial (Z)
   belt motion, from belt misalignment as one sheave half moves, is neglected.
 * **Sheave axial coordinates:** `x_p` is primary *closing* travel of the
-  movable half (0 = fully open, belt at minimum radius). `x_s` is secondary
+  movable half, measured from belt contact (negative over the engagement gap, down to
+  `−engagement_gap` when fully open). `x_s` is secondary
   *opening* travel (0 = fully closed, belt at maximum radius). Both are bounded
   by stops at `[0, stroke]`.
 * **Forces "on" a body** are the forces that body receives. Reactions follow
