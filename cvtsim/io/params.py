@@ -157,8 +157,22 @@ def load(path=DEFAULT, overrides=None, tune=None):
     hA = b["h_conv"] * gm["belt_pitch_length"] * (b["top_width"] + 2.0 * b["flank_height"])
     thermal = dict(m_belt=m_belt, C_b=m_belt * b["c_p"], hA=hA, tau=m_belt * b["c_p"] / hA,
                    T_amb=b["T_amb_C"] + 273.15)
+    # engine rotor split and PTO torsion (11 section 2); J_e is the one-rotor inertia of 05/09
+    e = p["engine"]
+    if e["pto_model"] not in ("torsional", "rigid"):
+        raise ValueError(f"engine.pto_model must be 'torsional' or 'rigid', not {e['pto_model']!r}")
+    e["J_e"] = e["J_f"] + e["J_c"]
+    mat = p["shafts"]["material"]
+    G_sh = mat["E"] / (2.0 * (1.0 + mat["nu"]))
+    d_eff = e["pto_d"] - 0.5 * e["key_width"]
+    L_eff = e["pto_length"] + e["crank_web_length"]
+    k_pto = G_sh * np.pi * d_eff ** 4 / (32.0 * L_eff)
+    J_red = e["J_f"] * e["J_c"] / (e["J_f"] + e["J_c"])
+    pto = dict(G=G_sh, d_eff=d_eff, L_eff=L_eff, k=k_pto,
+               c=2.0 * e["pto_damping_ratio"] * np.sqrt(k_pto * J_red),
+               f_n=np.sqrt(k_pto / J_red) / (2.0 * np.pi))
     p["derived"] = dict(geometry=g, beta=beta, p_h=p_h, theta_t0=th0,
                         F_torsion0=F_t0, F_l0=F_l0,
                         m_w=pr["m_weight"] + pr["m_cover"], ramp=ramp, helix=helix,
-                        belt_thermal=thermal)
+                        belt_thermal=thermal, pto=pto)
     return p

@@ -1,6 +1,7 @@
 """Full CVT launch model: segmented belt + analytic cone sheaves + Lagrangian
 primary/secondary with profiled ramp and helix + engine with governor + vehicle with
-tire slip, driveline losses and aero + lumped belt temperature (docs/theory 03-06, 09).
+tire slip, driveline losses and aero + lumped belt temperature (docs/theory 03-06, 09)
++ firing pulses, PTO torsion between crank J_f and clutch J_c, clutch Coulomb friction (11).
 Symplectic Euler, whole time loop jitted (numba) for speed."""
 import numpy as np
 from cvtsim.core.jit import maybe_njit
@@ -8,6 +9,7 @@ from cvtsim.belt.belt import belt_forces, belt_tensions, init_belt_on_path, flan
 from cvtsim.contact.sheave import sheave_contact
 from cvtsim.cvt.profiles import pp_eval
 from cvtsim.drivetrain.vehicle import G_ACC, road_load_force, tire_force, driveline_torque
+from cvtsim.drivetrain.pulses import gas_torque, rec_torque, pulse_table
 
 # output channel indices
 CH = ["t", "w_e", "w_s", "x_p", "xd_p", "x_s", "xd_s", "rstar_p", "rstar_s",
@@ -18,19 +20,24 @@ CH = ["t", "w_e", "w_s", "x_p", "xd_p", "x_s", "xd_s", "rstar_p", "rstar_s",
       # 09 section 6
       "theta_e", "theta_s", "r_w", "F_fw", "F_spr_p", "F_spr_s", "F_tors", "F_cam",
       "cap_p", "cap_s", "P_slip_p", "P_slip_s", "T_belt", "v", "w_wheel", "F_tire",
-      "N_rear", "P_ground", "a_x"]
+      "N_rear", "P_ground", "a_x",
+      # 11 sections 1-3
+      "T_pto", "theta_c", "w_c", "F_fric_p", "F_fric_s", "T_pulse"]
 IDX = {k: i for i, k in enumerate(CH)}
 
 # packed scalar parameters (order of run_loop's unpacking)
 PRM = ["m_node", "L0", "EA", "eta", "EI", "cb", "beta", "k_n", "c_n", "mu", "v_eps",
        "rp_min", "rs_max", "C", "rout_p", "rout_s",
-       "J_e", "n_w", "m_w", "k_p", "F_p0", "m_ph", "c_p", "s_p",
+       "J_f", "n_w", "m_w", "k_p", "F_p0", "m_ph", "c_p", "s_p",
        "J_s", "J_m", "m_m", "k_l", "F_l0", "k_t", "th_t0", "c_s", "s_s",
        "k_stop", "c_stop_p", "c_stop_s", "m_veh", "r_t", "G", "Crr", "rpm_cut", "gov_band",
        "g_p", "k_hub", "rigid", "eta_d", "c_a", "mu_t", "s0", "v_min", "b_L", "h_L",
-       "C_b", "hA", "f_b", "T_amb", "rp_hub"]
+       "C_b", "hA", "f_b", "T_amb", "rp_hub",
+       "J_c", "k_pto", "c_pto", "pto_rigid", "pulses", "m_rec", "r_cr", "lam",
+       "mu_h", "mu_r", "mu_b", "v_x", "r_cam"]
 # state vector
-ST = ["w_e", "x_p", "xd_p", "w_s", "x_s", "xd_s", "t", "theta_e", "theta_s", "v", "T_belt", "a_x"]
+ST = ["w_e", "x_p", "xd_p", "w_s", "x_s", "xd_s", "t", "theta_e", "theta_s", "v", "T_belt", "a_x",
+      "w_c", "theta_c"]
 
 
 @maybe_njit
@@ -106,7 +113,8 @@ def engine_torque(w_e, eng_w, eng_T, rpm_cut, gov_band):
 def primary_accel(u, ud, w, Q_w, Q_u, J_e, n_w, m_w, m_ph, rk, rc):
     """(P1'),(P2') with ramp profile (rk, rc). Returns (w_dot, u_ddot, r_w, kappa, J, M).
 
-    Q_w = T_eng + tau_belt - tau_gov; Q_u = -F_spr - c_p u_dot - F_a,p + F_stop.
+    Q_w = T_eng + tau_belt - tau_gov (T_pto + tau_belt on the clutch rotor, 11 section 2);
+    Q_u = -F_spr - c_p u_dot - F_a,p + F_stop + Q_fric (11 section 3).
     """
     r_w, kap, dkap = pp_eval(rk, rc, u)
     J = J_e + n_w * m_w * r_w * r_w
@@ -138,22 +146,52 @@ def belt_temperature_step(T_b, P, C_b, hA, T_amb, h):
 
 
 @maybe_njit
-def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nframes, lock_engine):
+def helix_friction(tau_c, hp, r_c, mu_h, xd, v_x):
+    """Helix-button Coulomb force on x_s (11 section 3): -mu_h |tau_c| / (r_c sin^2 alpha)
+    tanh(xd/v_x), with 1/sin^2 alpha = 1 + (r_c h')^2 for h' = 1/(r_c tan alpha)."""
+    return -mu_h * abs(tau_c) * (1.0 + (r_c * hp) ** 2) / r_c * np.tanh(xd / v_x)
+
+
+@maybe_njit
+def coulomb(mu, F, xd, v_x):
+    """Regularized Coulomb force -mu |F| tanh(xd/v_x) on a sliding coordinate."""
+    return -mu * abs(F) * np.tanh(xd / v_x)
+
+
+@maybe_njit
+def _resultant(f):
+    """Magnitude of the in-plane sum of node forces f (N, 2)."""
+    sx = 0.0; sy = 0.0
+    for i in range(f.shape[0]):
+        sx += f[i, 0]; sy += f[i, 1]
+    return np.sqrt(sx * sx + sy * sy)
+
+
+@maybe_njit
+def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, h, nsteps, nout, nframes, lock_engine):
     """Integrate nsteps of h. st: state (see ST), prm: scalars (see PRM), (rk, rc) ramp and
-    (hk, hc) helix piecewise polynomials. Returns (out, frame_t, frame_X, frame_T, frame_s)."""
+    (hk, hc) helix piecewise polynomials, (gm, gq) gas-torque tables (11 section 1).
+    Returns (out, frame_t, frame_X, frame_T, frame_s)."""
     (m_node, L0, EA, eta, EI, cb, beta, k_n, c_n, mu, v_eps,
      rp_min, rs_max, C, rout_p, rout_s,
-     J_e, n_w, m_w, k_p, F_p0, m_ph, c_p, s_p,
+     J_f, n_w, m_w, k_p, F_p0, m_ph, c_p, s_p,
      J_s, J_m, m_m, k_l, F_l0, k_t, th_t0, c_s, s_s,
      k_stop, c_stop_p, c_stop_s, m_veh, r_t, G, Crr, rpm_cut, gov_band,
      g_p, k_hub, rigid, eta_d, c_a, mu_t, s0, v_min, b_L, h_L,
-     C_b, hA, f_b, T_amb, rp_hub) = prm[:57]
+     C_b, hA, f_b, T_amb, rp_hub,
+     J_c, k_pto, c_pto, pto_rigid, pulses, m_rec, r_cr, lam,
+     mu_h, mu_r, mu_b, v_x, r_cam) = prm[:70]
+    rig = pto_rigid != 0.0
+    pul = pulses != 0.0
     tb = np.tan(beta)
     w_e, x_p, xd_p, w_s, x_s, xd_s, t = st[0], st[1], st[2], st[3], st[4], st[5], st[6]
     th_e, th_s, v, T_b, a_prev = st[7], st[8], st[9], st[10], st[11]
+    w_c, th_c = st[12], st[13]
+    if rig:
+        w_c = w_e; th_c = th_e
     tire = rigid == 0.0
     stride = max(nsteps // nout, 1)
-    out = np.zeros((nsteps // stride + 1, 52))
+    out = np.zeros((nsteps // stride + 1, 58))
     fstride = max(nsteps // max(nframes - 1, 1), 1)
     nf = min(nsteps // fstride + 1, nframes) if nframes > 0 else 0
     N = X.shape[0]
@@ -167,9 +205,11 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
         fb, Ub, Pb = belt_forces(X, V, L0, EA, eta, EI, cb, True)
         w_mov_s = w_s - hp * xd_s
         fp, Fap, tqpf, tqpm, Pfp, Upp, dlp, Nfp = sheave_contact(
-            X, V, 0.0, 0.0, rsp, rsp_d, beta, k_n, c_n, mu, v_eps, rout_p, w_e, w_e)
+            X, V, 0.0, 0.0, rsp, rsp_d, beta, k_n, c_n, mu, v_eps, rout_p, w_c, w_c)
         fs, Fas, tqsf, tqsm, Pfs, Ups, dls, Nfs = sheave_contact(
             X, V, C, 0.0, rss, rss_d, beta, k_n, c_n, mu, v_eps, rout_s, w_s, w_mov_s)
+        # in-plane belt load on each sheave (bushing friction, 11 section 3), hub bearing excluded
+        F_hub_p = _resultant(fp); F_hub_s = _resultant(fs)
         # free-running hub bearing under the open primary: frictionless radial support at rp_hub
         U_hub = 0.0
         for i in range(N):
@@ -193,16 +233,37 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
                     dd = (rsd - rdot) * np.sin(beta)
                     Pn += 2.0 * (Ni - k_n * di) * dd
         T_e, T_gov = engine_torque(w_e, eng_w, eng_T, rpm_cut, gov_band)
-        # primary (P1'),(P2'); travel u = x_p measured from belt contact (CVT_model_v4 convention),
-        # x_p in [-g_p, s_p]; spring force and flyweight radius are referenced at contact
+        # crank: gas torque with the governed map mean T_e, reciprocating inertia (11 section 1)
+        if pul:
+            T_g = gas_torque(th_e, T_e, gm, gq)
+            T_r, J_r = rec_torque(th_e, w_e, m_rec, r_cr, lam)
+        else:
+            T_g = T_e; T_r = 0.0; J_r = 0.0
+        Jf_t = J_f + J_r
+        # primary (P1'),(P2') on the clutch rotor; travel u = x_p measured from belt contact
+        # (CVT_model_v4 convention), x_p in [-g_p, s_p]; spring and flyweight radius referenced at contact
         u = x_p
         Fst_p, Ust_p, Pst_p = _stop(x_p, xd_p, -g_p, s_p, k_stop, c_stop_p)
         F_spr_p = F_p0 + k_p * u
-        wd_e, xdd_p, r_w, kap, Jp, Mx_p = primary_accel(
-            u, xd_p, w_e, T_e + tqpf + tqpm, -F_spr_p - c_p * xd_p - Fap + Fst_p,
-            J_e, n_w, m_w, m_ph, rk, rc)
+        rw_, kp_, _ = pp_eval(rk, rc, u)
+        Ffr_p = (coulomb(mu_r, n_w * m_w * rw_ * kp_ * w_c * w_c, xd_p, v_x)
+                 + coulomb(mu_b, F_hub_p, xd_p, v_x))
+        Qu = -F_spr_p - c_p * xd_p - Fap + Fst_p + Ffr_p
+        if rig:
+            wd_e, xdd_p, r_w, kap, Jp, Mx_p = primary_accel(
+                u, xd_p, w_e, T_g + T_r + tqpf + tqpm, Qu, Jf_t + J_c, n_w, m_w, m_ph, rk, rc)
+            wd_c = wd_e
+            T_pto = T_g + T_r - Jf_t * wd_e
+            U_pto = 0.0; P_pto = 0.0
+        else:
+            tw = th_e - th_c; dw = w_e - w_c
+            T_pto = k_pto * tw + c_pto * dw
+            wd_c, xdd_p, r_w, kap, Jp, Mx_p = primary_accel(
+                u, xd_p, w_c, T_pto + tqpf + tqpm, Qu, J_c, n_w, m_w, m_ph, rk, rc)
+            wd_e = (T_g + T_r - T_pto) / Jf_t
+            U_pto = 0.5 * k_pto * tw * tw; P_pto = c_pto * dw * dw
         if lock_engine:
-            wd_e = 0.0
+            wd_e = 0.0; wd_c = 0.0
         # vehicle and driveline
         w_w = w_s / G
         if tire:
@@ -219,7 +280,9 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
         F_spr_s = F_l0 + k_l * x_s
         F_tors = k_t * (th_t0 + hx) * hp
         Qt = tqsf + tqsm - T_load
-        Qx = Fcam + Fas - F_spr_s - F_tors - c_s * xd_s + Fst_s
+        Ffr_s = (helix_friction(tqsm + k_t * (th_t0 + hx), hp, r_cam, mu_h, xd_s, v_x)
+                 + coulomb(mu_b, F_hub_s, xd_s, v_x))
+        Qx = Fcam + Fas - F_spr_s - F_tors - c_s * xd_s + Fst_s + Ffr_s
         wd_s, xdd_s, a11, a12, a22 = secondary_accel(xd_s, Qt, Qx, J_s, J_m, m_m, hp, hpp)
         if tire:
             a_x = (F_x - F_road) / m_veh
@@ -233,18 +296,22 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
             KEv = 0.0
         # energy bookkeeping (state at t_n)
         KEb = 0.5 * m_node * np.sum(V * V)
-        KEp = 0.5 * Jp * w_e * w_e + 0.5 * Mx_p * xd_p * xd_p
+        if rig:
+            KEp = 0.5 * Jp * w_e * w_e + 0.5 * Mx_p * xd_p * xd_p
+        else:
+            KEp = 0.5 * Jf_t * w_e * w_e + 0.5 * Jp * w_c * w_c + 0.5 * Mx_p * xd_p * xd_p
         KEs = 0.5 * (a11 * w_s * w_s + 2 * a12 * w_s * xd_s + a22 * xd_s * xd_s)
         Usp = F_p0 * u + 0.5 * k_p * u ** 2
         Uss = F_l0 * x_s + 0.5 * k_l * x_s * x_s + 0.5 * k_t * (th_t0 + hx) ** 2
-        E = KEb + KEp + KEs + KEv + Ub + Upp + Ups + Usp + Uss + Ust_p + Ust_s + U_hub
+        E = KEb + KEp + KEs + KEv + Ub + Upp + Ups + Usp + Uss + Ust_p + Ust_s + U_hub + U_pto
         Pst = Pst_p + Pst_s
-        P_d = Pb + Pfp + Pfs + Pn + c_p * xd_p ** 2 + c_s * xd_s ** 2 + P_veh + Pst
-        P_in = T_e * w_e if not lock_engine else 0.0
+        P_fr = -Ffr_p * xd_p - Ffr_s * xd_s
+        P_d = Pb + Pfp + Pfs + Pn + c_p * xd_p ** 2 + c_s * xd_s ** 2 + P_veh + Pst + P_fr + P_pto
+        P_in = T_g * w_e if not lock_engine else 0.0
         if n % stride == 0 and k < out.shape[0]:
             T = belt_tensions(X, V, L0, EA, eta, True)
             Tt, Tsl = _span_tensions(X, T, C)
-            rep, slp = _contact_stats(X, V, 0.0, w_e, Nfp)
+            rep, slp = _contact_stats(X, V, 0.0, w_c, Nfp)
             res, sls = _contact_stats(X - np.array([C, 0.0]), V, 0.0, w_s, Nfs)
             Fpx = 0.0; Fpy = 0.0; Fsx = 0.0; Fsy = 0.0
             for i in range(N):
@@ -257,11 +324,12 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
             o[20] = Tt; o[21] = Tsl; o[22] = T.max()
             o[23] = rep; o[24] = res; o[25] = slp; o[26] = sls
             o[27] = E; o[28] = W_in; o[29] = W_diss; o[30] = Fst_p; o[31] = Fst_s; o[32] = Fcam
-            o[33] = th_e; o[34] = th_s; o[35] = r_w; o[36] = n_w * m_w * r_w * kap * w_e * w_e
+            o[33] = th_e; o[34] = th_s; o[35] = r_w; o[36] = n_w * m_w * r_w * kap * w_c * w_c
             o[37] = F_spr_p; o[38] = F_spr_s; o[39] = F_tors; o[40] = Fcam
             o[41] = 2 * mu * rep * Fap / np.cos(beta); o[42] = 2 * mu * res * Fas / np.cos(beta)
             o[43] = Pfp; o[44] = Pfs; o[45] = T_b; o[46] = v; o[47] = w_w; o[48] = F_x
             o[49] = N_r; o[50] = F_x * v; o[51] = a_x
+            o[52] = T_pto; o[53] = th_c; o[54] = w_c; o[55] = Ffr_p; o[56] = Ffr_s; o[57] = T_g + T_r
             k += 1
         if nf > 0 and n % fstride == 0 and kf < nf:
             f_t[kf] = t
@@ -282,6 +350,11 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
             X[i, 1] += h * V[i, 1]
         w_e += h * wd_e
         th_e += h * w_e
+        if rig:
+            w_c = w_e; th_c = th_e
+        else:
+            w_c += h * wd_c
+            th_c += h * w_c
         xd_p += h * xdd_p; x_p += h * xd_p
         w_s += h * wd_s
         th_s += h * w_s
@@ -292,6 +365,7 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, h, nsteps, nout, nfram
         t += h
     st[0] = w_e; st[1] = x_p; st[2] = xd_p; st[3] = w_s; st[4] = x_s; st[5] = xd_s; st[6] = t
     st[7] = th_e; st[8] = th_s; st[9] = v; st[10] = T_b; st[11] = a_prev
+    st[12] = w_c; st[13] = th_c
     return out[:k], f_t[:kf], f_X[:kf], f_T[:kf], f_s[:kf]
 
 
@@ -322,11 +396,13 @@ def build(p, dt=None, kn_scale=1.0):
     J_s = se["J_shaft"] + (veh["mass"] * veh["tire_radius"] ** 2 / G ** 2 if rigid else 0.0) + veh["J_wheels"] / G ** 2
     L_wb = veh["wheelbase"]
     th = d["belt_thermal"]
+    pulses = bool(eng["pulses"])
+    tab = pulse_table(eng) if pulses else dict(gm=np.zeros(48), gq=np.zeros(48))
     vals = dict(
         m_node=m_node, L0=L0, EA=b["EA"], eta=b["eta"], EI=b["EI"], cb=0.0, beta=beta, k_n=k_n, c_n=c_n,
         mu=b["mu"], v_eps=b["v_eps"], rp_min=g["rp_min"], rs_max=g["rs_max"], C=g["C"],
         rout_p=p["geometry"]["rp_mech_max"] + margin, rout_s=g["rs_max"] + margin,
-        J_e=eng["J_e"], n_w=pr["n_weights"], m_w=d["m_w"], k_p=pr["k_spring"], F_p0=pr["F_preload"],
+        J_f=eng["J_f"], n_w=pr["n_weights"], m_w=d["m_w"], k_p=pr["k_spring"], F_p0=pr["F_preload"],
         m_ph=pr["m_axial"], c_p=pr["c_axial"], s_p=g["x_p_stop"],
         J_s=J_s, J_m=se["J_movable"], m_m=se["m_axial"], k_l=se["k_linear"], F_l0=d["F_l0"],
         k_t=se["k_torsion"], th_t0=d["theta_t0"], c_s=se["c_axial"], s_s=se["stroke"],
@@ -335,22 +411,26 @@ def build(p, dt=None, kn_scale=1.0):
         rpm_cut=eng["rpm_cut"], gov_band=eng["governor_band"], g_p=pr["engagement_gap"], k_hub=k_n,
         rigid=float(rigid), eta_d=veh["eta"], c_a=0.5 * veh["rho_air"] * veh["CdA"], mu_t=veh["mu_t"],
         s0=veh["s0"], v_min=veh["v_min"], b_L=veh["b_over_L"], h_L=veh["h_cg"] / L_wb,
-        C_b=th["C_b"], hA=th["hA"], f_b=b["f_slip_heat"], T_amb=th["T_amb"], rp_hub=g["rp_hub"])
+        C_b=th["C_b"], hA=th["hA"], f_b=b["f_slip_heat"], T_amb=th["T_amb"], rp_hub=g["rp_hub"],
+        J_c=eng["J_c"], k_pto=d["pto"]["k"], c_pto=d["pto"]["c"], pto_rigid=float(eng["pto_model"] == "rigid"),
+        pulses=float(pulses), m_rec=eng["m_rec"], r_cr=0.5 * eng["stroke"],
+        lam=0.5 * eng["stroke"] / eng["rod_length"], mu_h=se["mu_helix"], mu_r=pr["mu_roller"],
+        mu_b=p["sheave"]["mu_bushing"], v_x=p["sheave"]["v_fric"], r_cam=se["r_cam"])
     prm = np.array([vals[k] for k in PRM], dtype=np.float64)
     st = np.zeros(len(ST))
-    st[0] = eng["idle_rpm"] * np.pi / 30
+    st[0] = st[ST.index("w_c")] = eng["idle_rpm"] * np.pi / 30
     st[1] = -pr["engagement_gap"]
     st[4] = g["x_s0"]
     st[10] = th["T_amb"]
     return dict(X=X, V=np.zeros_like(X), st=st, prm=prm,
                 eng_w=np.asarray(eng["rpm"], float), eng_T=np.asarray(eng["torque"], float),
-                rk=ramp.xk, rc=ramp.c, hk=helix.xk, hc=helix.c,
+                rk=ramp.xk, rc=ramp.c, hk=helix.xk, hc=helix.c, gm=tab["gm"], gq=tab["gq"],
                 h=float(dt or p["sim"]["dt"]), p=p)
 
 
 def _loop(model, st, prm, nsteps, nout, nframes, lock):
     return run_loop(model["X"], model["V"], st, prm, model["eng_w"], model["eng_T"],
-                    model["rk"], model["rc"], model["hk"], model["hc"], model["h"],
+                    model["rk"], model["rc"], model["hk"], model["hc"], model["gm"], model["gq"], model["h"],
                     nsteps, nout, nframes, lock)
 
 
@@ -358,18 +438,18 @@ def relax(model, t_relax=0.02):
     """Settle the belt in the stationary sheaves (engine locked, nothing turning)."""
     st = model["st"].copy()
     w0 = st[0]
-    st[0] = 0.0
+    st[0] = st[ST.index("w_c")] = 0.0
     prm = model["prm"].copy()
     prm[PRM.index("eta")] = max(prm[PRM.index("eta")], 0.0)
     n = int(t_relax / model["h"])
     for _ in range(4):  # damp by zeroing velocity between chunks (kinetic relaxation)
         _loop(model, st, prm, n // 4, 2, 0, True)
         model["V"][:] = 0.0
-    for key in ("xd_p", "xd_s", "w_s", "t", "theta_e", "theta_s", "v", "a_x"):
+    for key in ("xd_p", "xd_s", "w_s", "t", "theta_e", "theta_s", "v", "a_x", "theta_c"):
         st[ST.index(key)] = 0.0
     st[ST.index("T_belt")] = model["st"][ST.index("T_belt")]
     st[1] = min(st[1], -model["p"]["primary"]["engagement_gap"])
-    st[0] = w0
+    st[0] = st[ST.index("w_c")] = w0
     model["st"] = st
 
 
