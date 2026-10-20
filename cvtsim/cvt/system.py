@@ -34,7 +34,7 @@ PRM = ["m_node", "L0", "EA", "eta", "EI", "cb", "beta", "k_n", "c_n", "mu", "v_e
        "g_p", "k_hub", "rigid", "eta_d", "c_a", "mu_t", "s0", "v_min", "b_L", "h_L",
        "C_b", "hA", "f_b", "T_amb", "rp_hub",
        "J_c", "k_pto", "c_pto", "pto_rigid", "pulses", "m_rec", "r_cr", "lam",
-       "mu_h", "mu_r", "mu_b", "v_x", "r_cam"]
+       "mu_h", "mu_r", "mu_b", "v_x", "r_cam", "T_mot"]
 # state vector
 ST = ["w_e", "x_p", "xd_p", "w_s", "x_s", "xd_s", "t", "theta_e", "theta_s", "v", "T_belt", "a_x",
       "w_c", "theta_c"]
@@ -168,9 +168,10 @@ def _resultant(f):
 
 
 @maybe_njit
-def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, h, nsteps, nout, nframes, lock_engine):
+def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, sched, h, nsteps, nout, nframes, lock_engine):
     """Integrate nsteps of h. st: state (see ST), prm: scalars (see PRM), (rk, rc) ramp and
-    (hk, hc) helix piecewise polynomials, (gm, gq) gas-torque tables (11 section 1).
+    (hk, hc) helix piecewise polynomials, (gm, gq) gas-torque tables (11 section 1),
+    sched: scenario knots (t, throttle, grade [rad], traction factor), linear in t (14).
     Returns (out, frame_t, frame_X, frame_T, frame_s)."""
     (m_node, L0, EA, eta, EI, cb, beta, k_n, c_n, mu, v_eps,
      rp_min, rs_max, C, rout_p, rout_s,
@@ -180,7 +181,7 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, h, nsteps, nou
      g_p, k_hub, rigid, eta_d, c_a, mu_t, s0, v_min, b_L, h_L,
      C_b, hA, f_b, T_amb, rp_hub,
      J_c, k_pto, c_pto, pto_rigid, pulses, m_rec, r_cr, lam,
-     mu_h, mu_r, mu_b, v_x, r_cam) = prm[:70]
+     mu_h, mu_r, mu_b, v_x, r_cam, T_mot) = prm[:71]
     rig = pto_rigid != 0.0
     pul = pulses != 0.0
     tb = np.tan(beta)
@@ -198,7 +199,20 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, h, nsteps, nou
     f_t = np.zeros(nf); f_X = np.zeros((nf, N, 2)); f_T = np.zeros((nf, N)); f_s = np.zeros((nf, 5))
     W_in = 0.0; W_diss = 0.0
     k = 0; kf = 0
+    ks = 0
     for n in range(nsteps + 1):
+        # scenario schedule at t (14 section 1)
+        while ks < sched.shape[0] - 2 and t >= sched[ks + 1, 0]:
+            ks += 1
+        if t <= sched[0, 0]:
+            thr = sched[0, 1]; grd = sched[0, 2]; trac = sched[0, 3]
+        elif t >= sched[-1, 0]:
+            thr = sched[-1, 1]; grd = sched[-1, 2]; trac = sched[-1, 3]
+        else:
+            fz = (t - sched[ks, 0]) / (sched[ks + 1, 0] - sched[ks, 0])
+            thr = sched[ks, 1] + fz * (sched[ks + 1, 1] - sched[ks, 1])
+            grd = sched[ks, 2] + fz * (sched[ks + 1, 2] - sched[ks, 2])
+            trac = sched[ks, 3] + fz * (sched[ks + 1, 3] - sched[ks, 3])
         rsp = rp_min + x_p / (2 * tb); rsp_d = xd_p / (2 * tb)
         rss = rs_max - x_s / (2 * tb); rss_d = -xd_s / (2 * tb)
         hx, hp, hpp = pp_eval(hk, hc, x_s)
@@ -233,6 +247,8 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, h, nsteps, nou
                     dd = (rsd - rdot) * np.sin(beta)
                     Pn += 2.0 * (Ni - k_n * di) * dd
         T_e, T_gov = engine_torque(w_e, eng_w, eng_T, rpm_cut, gov_band)
+        if thr != 1.0:  # part throttle: scaled map torque minus motoring (pumping + friction) torque
+            T_e = thr * T_e - (1.0 - thr) * T_mot * np.tanh(w_e / 10.0)
         # crank: gas torque with the governed map mean T_e, reciprocating inertia (11 section 1)
         if pul:
             T_g = gas_torque(th_e, T_e, gm, gq)
@@ -268,11 +284,12 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, h, nsteps, nou
         w_w = w_s / G
         if tire:
             F_x, N_r, _ = tire_force(w_w, v, a_prev, m_veh, r_t, mu_t, s0, v_min, b_L, h_L)
-            F_road = road_load_force(v, m_veh, Crr, c_a)
+            F_x *= trac; N_r *= trac  # airborne (0) or landing load (> 1)
+            F_road = road_load_force(v, m_veh, Crr, c_a) + m_veh * G_ACC * np.sin(grd)
             T_load = driveline_torque(F_x, w_s, r_t, G, eta_d)
         else:
             v = w_s * r_t / G
-            F_road = road_load_force(v, m_veh, Crr, c_a)
+            F_road = road_load_force(v, m_veh, Crr, c_a) + m_veh * G_ACC * np.sin(grd)
             T_load = driveline_torque(F_road, w_s, r_t, G, eta_d)
         # secondary
         Fst_s, Ust_s, Pst_s = _stop(x_s, xd_s, 0.0, s_s, k_stop, c_stop_s)
@@ -369,7 +386,27 @@ def run_loop(X, V, st, prm, eng_w, eng_T, rk, rc, hk, hc, gm, gq, h, nsteps, nou
     return out[:k], f_t[:kf], f_X[:kf], f_T[:kf], f_s[:kf]
 
 
-def build(p, dt=None, kn_scale=1.0):
+def schedule(scenario=None):
+    """Scenario knots as an (n, 4) array: t [s], throttle [0-1], grade [rad], traction factor (14).
+
+    scenario: None (full-throttle launch on level ground), a scenario dict, or a name in
+    cvtsim/io/scenarios/. Grades are given in degrees in the files.
+    """
+    if scenario is None:
+        return np.array([[0.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]])
+    if isinstance(scenario, str):
+        from cvtsim.io.params import load_scenario
+        scenario = load_scenario(scenario)
+    k = np.array(scenario["knots"], dtype=float)
+    if k.ndim != 2 or k.shape[1] != 4 or k.shape[0] < 2 or np.any(np.diff(k[:, 0]) <= 0):
+        raise ValueError("scenario knots must be rows [t, throttle, grade_deg, traction] with increasing t")
+    if np.any((k[:, 1] < 0) | (k[:, 1] > 1)) or np.any(k[:, 3] < 0):
+        raise ValueError("throttle must be in [0, 1] and traction factor >= 0")
+    k[:, 2] = np.radians(k[:, 2])
+    return k
+
+
+def build(p, dt=None, kn_scale=1.0, scenario=None):
     """Assemble the launch model from a params dict (cvtsim.io.params.load())."""
     g = p["derived"]["geometry"]
     d = p["derived"]
@@ -418,7 +455,8 @@ def build(p, dt=None, kn_scale=1.0):
         J_c=eng["J_c"], k_pto=d["pto"]["k"], c_pto=d["pto"]["c"], pto_rigid=float(eng["pto_model"] == "rigid"),
         pulses=float(pulses), m_rec=eng["m_rec"], r_cr=0.5 * eng["stroke"],
         lam=0.5 * eng["stroke"] / eng["rod_length"], mu_h=se["mu_helix"], mu_r=pr["mu_roller"],
-        mu_b=p["sheave"]["mu_bushing"], v_x=p["sheave"]["v_fric"], r_cam=se["r_cam"])
+        mu_b=p["sheave"]["mu_bushing"], v_x=p["sheave"]["v_fric"], r_cam=se["r_cam"],
+        T_mot=eng["motoring_torque"])
     prm = np.array([vals[k] for k in PRM], dtype=np.float64)
     st = np.zeros(len(ST))
     st[0] = st[ST.index("w_c")] = eng["idle_rpm"] * np.pi / 30
@@ -428,12 +466,12 @@ def build(p, dt=None, kn_scale=1.0):
     return dict(X=X, V=np.zeros_like(X), st=st, prm=prm,
                 eng_w=np.asarray(eng["rpm"], float), eng_T=np.asarray(eng["torque"], float),
                 rk=ramp.xk, rc=ramp.c, hk=helix.xk, hc=helix.c, gm=tab["gm"], gq=tab["gq"],
-                h=float(dt or p["sim"]["dt"]), p=p)
+                sched=schedule(scenario), h=float(dt or p["sim"]["dt"]), p=p)
 
 
 def _loop(model, st, prm, nsteps, nout, nframes, lock):
     return run_loop(model["X"], model["V"], st, prm, model["eng_w"], model["eng_T"],
-                    model["rk"], model["rc"], model["hk"], model["hc"], model["gm"], model["gq"], model["h"],
+                    model["rk"], model["rc"], model["hk"], model["hc"], model["gm"], model["gq"], model["sched"], model["h"],
                     nsteps, nout, nframes, lock)
 
 

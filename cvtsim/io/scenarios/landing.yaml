@@ -1,0 +1,12 @@
+description: "Full-throttle launch, airborne from 3.0 s to 3.6 s at full throttle, then a landing at 3 g. The wheels overspeed in the air and are forced back to ground speed on contact."
+t_end: 5.0
+notes: "Airtime and the 3 g peak are reporting choices. A logged landing (wheel speed and suspension travel) should replace them."
+knots:
+  - [0.0, 1.0, 0.0, 1.0]
+  - [3.0, 1.0, 0.0, 1.0]
+  - [3.02, 1.0, 0.0, 0.0]
+  - [3.6, 1.0, 0.0, 0.0]
+  - [3.63, 1.0, 0.0, 3.0]
+  - [3.70, 1.0, 0.0, 3.0]
+  - [3.85, 1.0, 0.0, 1.0]
+  - [5.0, 1.0, 0.0, 1.0]

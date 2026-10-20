@@ -2,6 +2,8 @@
 name = "cvtsim"
 version = "0.1.0"
 requires-python = ">=3.11"
+license = {text = "MIT"}
+description = "Dynamic simulator for rubber-belt CVTs in Baja SAE cars"
 dependencies = ["numpy", "scipy", "matplotlib", "pyyaml", "openpyxl"]
 [project.optional-dependencies]
 fast = ["numba"]
@@ -15,7 +17,7 @@ build-backend = "setuptools.build_meta"
 include = ["cvtsim*"]
 
 [tool.setuptools.package-data]
-"cvtsim.io" = ["*.yaml", "tuning/*.yaml", "tuning/tunes/*.yaml"]
+"cvtsim.io" = ["*.yaml", "tuning/*.yaml", "tuning/tunes/*.yaml", "scenarios/*.yaml"]
 "cvtsim.viz" = ["fonts/*"]
 
 [tool.pytest.ini_options]

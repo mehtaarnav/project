@@ -30,11 +30,12 @@ engine:
   crank_web_length: {value: 0.030, range: [0.010, 0.060], unit: m, source: "ASSUMED equivalent crank-web length added to the PTO (11 sec 2)"}
   key_width: {value: 0.00635, unit: m, source: "CVTech-AAB Mini-Baja package, 'Mini Baja geometry' drawing: primary bore 25.436 mm with 6.375 mm keyway (1/4 in key); consistent with ASME B17.1 for a 1 in shaft (11 sec 2)"}
   pto_damping_ratio: {value: 0.02, source: "ASSUMED modal damping of the PTO torsional mode (11 sec 2)"}
+  motoring_torque: {value: 2.5, range: [1.5, 5.0], unit: N*m, source: "ASSUMED closed-throttle pumping and friction torque, no data; applied in proportion to (1 - throttle) (14 sec 1). Measure with a motoring or coast-down test"}
   idle_rpm: {value: 1500, unit: rpm, source: "PLACEHOLDER initial speed below derived engagement (1725.7 rpm)"}
 
 ratio:
   low:  {value: 3.0, source: "BRIEF (nominal; the model's low end is set by the primary hub radius, giving 3.026)"}
-  high: {value: 0.8, source: "BRIEF (not CVTech 0.43); imposed overdrive stop. Full hardware stroke would reach ~0.49, limited by the secondary minimum radius"}
+  high: {value: 0.8, source: "BRIEF: imposed overdrive stop, not a hardware limit. The hardware limit is 0.4642 (tune stock_unrestricted); the CVTech brochure value 0.43 is not reachable with the measured radii"}
 
 geometry:
   belt_pitch_length: {value: 0.895, unit: m, source: "CVTech-AAB Mini-Baja package, 'Mi belt selection table: BD52-2179-S, 895 mm pitch at 232 mm C/C, ratio 3.0-0.43 (manufacturer); matches team CVT_Inputs workbook L = 0.895 m"}
@@ -130,7 +131,7 @@ shafts:  # ALL PLACEHOLDER geometry (07 A7.4); z measured outboard from engine/b
   secondary:
     note: "jackshaft on two bearings, sheave between them, output sprocket outboard"
     stations: {value: [0.0, 0.05, 0.12, 0.15], unit: m}
-    diameters: {value: [0.019050, 0.019050, 0.019050], unit: m, source: "3/4 in jackshaft: secondary bore 19.086 mm with 4.8 mm keyway (3/16 in key), CVTech-AAB Mini-Baja package, 'Mini Baja geometry' drawing; uniform diameter PLACEHOLDER"}
+    diameters: {value: [0.019050, 0.019050, 0.019050], unit: m, source: "PLACEHOLDER uniform 19.05 mm. Only the clutch journal is known (CVTech bore 19.086 mm, 3/16 in key); the shaft steps, bearing seats and keyways are not"}
     bearings: {value: [0.0, 0.12], unit: m, source: PLACEHOLDER}
     sheave_z: {value: 0.05, unit: m, source: PLACEHOLDER}
     output_z: {value: 0.15, unit: m, source: PLACEHOLDER}

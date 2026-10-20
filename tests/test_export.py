@@ -38,6 +38,13 @@ def test_write_viewer_accepts_shaft_histories(tmp_path):
     d = json.loads(write_viewer(tmp_path, res, SIM_CH, snaps, p, sh).read_text())
     assert set(d["shafts"]) == set(sh["cols"])
     assert len(d["shafts"]["t"]) == len(d["series"]["t"])
+    mech = d["mechanism"]
+    assert all(len(v) == len(d["frames"]["t"]) for v in mech.values())
+    a0 = mech["helix_angle_deg"][0]
+    assert abs(a0 - 45.0) < 1e-3                                   # straight 45 deg helix
+    assert abs(mech["torsion_twist"][0] - (np.pi / 6 + mech["helix_twist"][0])) < 1e-4
+    assert abs(mech["spring_p_compression"][0] - d["series"]["F_spr_p"][0] / 13208.0) < 1e-6
+    assert "peak_belt_tension" in d["events"]
 
 
 def test_write_viewer(tmp_path):

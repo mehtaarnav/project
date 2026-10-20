@@ -72,7 +72,7 @@ def shaft_fatigue(t, w, M, T, crit, Kt, Su, Sy, finish):
     sm_env = SQ3 * Kfs * zt * np.abs(T).max()
     D = D_b + D_t
     return dict(Kf=Kf, Kfs=Kfs, q=q, Se_MPa=Se / 1e6, N_rev=float(dN.sum()),
-                D_bend=D_b, D_tors=D_t, D=D, launches_to_failure=(1.0 / D if D > 0 else math.inf),
+                D_bend=D_b, D_tors=D_t, D=D, launches_to_failure=(1.0 / D if D > 0 else None),  # None: no cycle above Se, life not bounded by this model
                 sa_env_MPa=sa_env / 1e6, sm_env_MPa=sm_env / 1e6,
                 n_goodman=goodman_n(sa_env, sm_env, Se, Su) if sa_env + sm_env > 0 else math.inf,
                 n_yield=yield_n(Sy, sa_env, sm_env) if sa_env + sm_env > 0 else math.inf)

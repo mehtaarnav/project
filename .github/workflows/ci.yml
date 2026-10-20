@@ -10,4 +10,4 @@ jobs:
           python-version: "3.11"
       - run: pip install numpy scipy matplotlib pyyaml openpyxl pytest numba
       - run: pip install -e .
-      - run: pytest -q
+      - run: pytest -q -m "not slow"

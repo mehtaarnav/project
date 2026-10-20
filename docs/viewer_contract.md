@@ -30,9 +30,25 @@ Written by `cvtsim.viz.export.write_viewer(run_dir, res, CH, snaps, p, sh=None)`
   "frames":   {"t": [...], "belt": [[[x, y], ...], ...], "tension": [[...], ...],
                "x_p": [...], "x_s": [...], "theta_e": [...], "theta_s": [...], "r_w": [...]},
   "series":   {"t": [...], "<channel>": [...], ...},
-  "shafts":   {"t": [...], "<bearing or stress channel>": [...]}
+  "shafts":   {"t": [...], "<bearing or stress channel>": [...]},
+  "mechanism": {"spring_p_compression": [...], "spring_s_compression": [...],
+                "torsion_twist": [...], "helix_twist": [...], "helix_angle_deg": [...],
+                "ramp_slope": [...]},
+  "events":   {"engagement": t, "peak_belt_tension": t, "shift_complete": t}
 }
 ```
+
+`mechanism` has one value per frame (same length as `frames.t`):
+
+* Spring compressions are measured from free length, in m. Free lengths are not in the parameters,
+  so draw each spring at an assumed free length minus its compression.
+* `torsion_twist` is the torsion spring's total twist in rad: pretwist plus helix twist.
+* `helix_twist` is the movable half's rotation relative to the fixed half, in rad.
+* `helix_angle_deg` is the local helix angle under the roller.
+* `ramp_slope` is `dr_w/du` at the current primary travel.
+
+`events` holds the times in s that are worth bookmarking. A key is absent if the event did not
+occur. `mechanism` and `events` are written only for full simulation output.
 
 Floats are rounded to 5 significant figures. `series` is decimated to at most 2000 points.
 

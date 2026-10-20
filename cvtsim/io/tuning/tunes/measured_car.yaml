@@ -1,0 +1,17 @@
+description: "Default parts on the team-measured car (COG raw data, car plus driver). Confirm the car, date, fuel and driver before using it as the baseline."
+components:
+  primary_spring: brief
+  flyweights: brief
+  ramp: straight_45
+  secondary_spring: brief
+  torsion_spring: brief
+  helix: straight_45
+  surface: offroad
+adjust:
+  primary_shim: {value: 0.0, unit: m, source: "no shim"}
+  torsion_hole_deg: {value: 30.0, source: BRIEF}
+vehicle:
+  mass: {value: 274.97, unit: kg, source: "measured: team COG raw data, car plus driver 606.2 lbf"}
+  b_over_L: {value: 0.55015, source: "measured: team COG raw data, rear 333.5 lbf of 606.2 lbf"}
+  wheelbase: {value: 1.4224, unit: m, source: "measured: team COG raw data, 56 in"}
+  h_cg: {value: 0.5087, unit: m, source: "team EES COG calculation, loaded; provisional (tyre radii measured while inclined)"}

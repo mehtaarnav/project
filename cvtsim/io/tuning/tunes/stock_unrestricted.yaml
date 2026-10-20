@@ -1,0 +1,14 @@
+description: "Default parts with the overdrive stop at the hardware limit (0.464) instead of the 0.8 stop in the brief."
+components:
+  primary_spring: brief
+  flyweights: brief
+  ramp: straight_45
+  secondary_spring: brief
+  torsion_spring: brief
+  helix: straight_45
+  surface: offroad
+adjust:
+  primary_shim: {value: 0.0, unit: m, source: "no shim"}
+  torsion_hole_deg: {value: 30.0, source: BRIEF}
+ratio:
+  high: {value: 0.4642, source: "DERIVED: belt closure at L = 895 mm, C = 232 mm with the primary at its 91.44 mm limit gives 0.46419; the secondary limit 42.42 mm gives 0.46381. CVTech brochure 0.43 is not reachable with these radii"}
