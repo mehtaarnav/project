@@ -16,7 +16,7 @@ from cvtsim import runs
 from cvtsim.io.params import DEFAULT, component, load, load_raw, load_scenario, load_tune_raw, scenario_names, tune_names
 from cvtsim.cvt.system import build, relax, simulate, CH
 
-METRIC_KEYS = ("engage_rpm", "t_shift_s", "v_end_kmh", "dist_m", "rpm_end", "x_s_end",
+METRIC_KEYS = ("t_100ft_s", "engage_rpm", "t_shift_s", "v_end_kmh", "dist_m", "rpm_end", "x_s_end",
                "T_tight_max", "slip_s_mean", "T_belt_max_C", "tire_slip_max", "energy_resid")
 
 
@@ -48,9 +48,11 @@ def metrics(res, p):
     engaged = _col(res, "Fa_p") > 1.0
     v_w = _col(res, "w_wheel") * p["vehicle"]["tire_radius"]
     slip = (v_w - v) / np.maximum(np.abs(v), p["vehicle"]["v_min"])
-    return dict(engage_rpm=rpm[np.argmax(engaged)] if engaged.any() else np.nan,
+    dist = np.concatenate([[0.0], np.cumsum(0.5 * (v[1:] + v[:-1]) * np.diff(t))])
+    t_100ft = float(np.interp(30.48, dist, t)) if dist[-1] >= 30.48 else np.nan
+    return dict(t_100ft_s=t_100ft, engage_rpm=rpm[np.argmax(engaged)] if engaged.any() else np.nan,
                 t_shift_s=t[np.argmax(shifted)] if shifted.any() else np.nan,
-                v_end=v[-1], v_end_kmh=3.6 * v[-1], dist_m=float(np.sum(0.5 * (v[1:] + v[:-1]) * np.diff(t))), rpm_end=rpm[-1],
+                v_end=v[-1], v_end_kmh=3.6 * v[-1], dist_m=float(dist[-1]), rpm_end=rpm[-1],
                 x_s_end=_col(res, "x_s")[-1] * 1e3, T_tight_max=_col(res, "T_tight").max(),
                 slip_s_mean=np.mean(_col(res, "slip_s")[t > 0.5]) if t[-1] > 0.5 else np.nan,
                 T_belt_max_C=_col(res, "T_belt").max() - 273.15, tire_slip_max=slip.max(),
