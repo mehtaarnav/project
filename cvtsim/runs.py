@@ -41,7 +41,7 @@ class Run:
         self.metrics = {}
         self._t0 = time.time()
         self.meta = dict(name=name, group=group, tags=list(tags), started=stamp,
-                         commit=_git("rev-parse", "HEAD"), dirty=bool(_git("status", "--porcelain")),
+                         commit=_git("rev-parse", "HEAD"), dirty=bool(_git("status", "--porcelain", "--", ".", ":!runs")),
                          python=platform.python_version(), host=platform.node())
         with open(self.dir / "config.yaml", "w") as f:
             yaml.safe_dump(dict(overrides=overrides or {}, parameters=raw_params), f, sort_keys=False)
