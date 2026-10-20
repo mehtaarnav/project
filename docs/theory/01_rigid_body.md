@@ -130,7 +130,8 @@ joint to ground at distance `L = 1 m`, `g = 9.81`. Release from rest at θ0.
 | T1.1 period θ0=10° | 2.00989 s | rel 1e-3 (h = 1e-4, rk4 or s-Euler with projection) |
 | T1.2 period θ0=60° | 2.15287 s | rel 1e-3 |
 | T1.3 period θ0=120° | 2.75409 s | rel 1e-3 |
-| T1.4 energy, θ0=60°, 10 s, h=1e-3, s-Euler + projection | `max|E−E0|/|E0|` | < 2e-3 (symplectic ⇒ bounded, O(h)) |
+| T1.4 energy, θ0=60°, 10 s, h=1e-3, rk4 + projection | `max|E−E0|/|E0|` | < 1e-6 |
+| T1.4b projected symplectic Euler: energy error at 2 s, h = 1e-3 vs 5e-4 | ratio 2 (first-order drift; projection breaks symplecticity, so the error is not bounded) | ratio in [1.7, 2.3] |
 | T1.5 constraint drift, θ0=60°, 10 s, h=1e-3, Baumgarte a=b=1/(10h)... see note | `max|Phi|` | ≤ 10·g·h² = 9.81e-5 m |
 | T1.6 drift with projection | `max|Phi|` | ≤ 1e-10 m |
 | T1.7 drift **without** stabilization or projection is larger than with projection | qualitative ordering | strict |

@@ -77,8 +77,8 @@ print(f"{'overhung_tip_defl_EB':32s} {P*c2**2*(a2+c2)/(3*E*I):.6g}")
 print(f"{'fe_cant_tip':32s} {1*10**3/(3*1000/12) + 10/((5/6)*500*1):.6g}")
 # string discrete N=20 segments, T0=100 N, m'=0.345 kg/m, span 0.2 m
 N, T0, mp, sp_ = 20, 100.0, 0.345, 0.2
-L0 = sp_/N; mnode = mp*L0
-f_disc = (1/np.pi)*np.sqrt(T0/(mnode*L0))*np.sin(np.pi/(2*N))
+l_ = sp_/N; mnode = mp*l_/(1 + T0/EA)  # mass fixed by unstretched length
+f_disc = (1/np.pi)*np.sqrt(T0/(mnode*l_))*np.sin(np.pi/(2*N))
 print(f"{'string_f1_discrete':32s} {f_disc:.6g}")
 print(f"{'string_f1_continuum':32s} {np.sqrt(T0/mp)/(2*sp_):.6g}")
 # Kt shoulder fits (UNVERIFIED coeffs) at D/d=1.2 r/d=0.1 -> t=0.1d, r=0.1d

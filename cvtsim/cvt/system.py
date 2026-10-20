@@ -72,7 +72,7 @@ def run_loop(X, V, st, prm, eng_w, eng_T, h, nsteps, nout, lock_engine):
      rp_min, rs_max, C, rout_p, rout_s,
      J_e, n_w, m_w, r_w0, kappa, k_p, F_p0, m_ph, c_p, s_p,
      J_s, J_m, m_m, p_h, sigma, k_l, F_l0, k_t, th_t0, c_s, s_s,
-     k_stop, c_stop_p, c_stop_s, m_veh, r_t, G, Crr, v0, rpm_cut) = prm[:46]
+     k_stop, c_stop_p, c_stop_s, m_veh, r_t, G, Crr, v0, rpm_cut, g_p, k_hub) = prm[:48]
     tb = np.tan(beta)
     w_e, x_p, xd_p, w_s, x_s, xd_s, t = st[0], st[1], st[2], st[3], st[4], st[5], st[6]
     stride = max(nsteps // nout, 1)
@@ -88,6 +88,15 @@ def run_loop(X, V, st, prm, eng_w, eng_T, h, nsteps, nout, lock_engine):
             X, V, 0.0, 0.0, rsp, rsp_d, beta, k_n, c_n, mu, v_eps, rout_p, w_e, w_e)
         fs, Fas, tqsf, tqsm, Pfs, Ups, dls, Nfs = sheave_contact(
             X, V, C, 0.0, rss, rss_d, beta, k_n, c_n, mu, v_eps, rout_s, w_s, w_mov_s)
+        # free-running hub bearing under the open primary: frictionless radial support at rp_min
+        U_hub = 0.0
+        for i in range(X.shape[0]):
+            r = np.sqrt(X[i, 0] ** 2 + X[i, 1] ** 2)
+            if r < rp_min:
+                pen = rp_min - r
+                fp[i, 0] += k_hub * pen * X[i, 0] / r
+                fp[i, 1] += k_hub * pen * X[i, 1] / r
+                U_hub += 0.5 * k_hub * pen * pen
         # normal non-conservative power: sum 2 (N - k delta) delta_dot
         Pn = 0.0
         for i in range(X.shape[0]):
@@ -110,13 +119,14 @@ def run_loop(X, V, st, prm, eng_w, eng_T, h, nsteps, nout, lock_engine):
         else:
             T_e = np.interp(rpm, eng_w, eng_T)
         # primary
-        r_w = r_w0 + kappa * x_p
+        # travel from fully open: x_p + g_p (spring and flyweights referenced there)
+        r_w = r_w0 + kappa * (x_p + g_p)
         Jp = J_e + n_w * m_w * r_w * r_w
         Mx_p = m_ph + n_w * m_w * kappa * kappa
-        Fst_p, Ust_p, Pst_p = _stop(x_p, xd_p, 0.0, s_p, k_stop, c_stop_p)
+        Fst_p, Ust_p, Pst_p = _stop(x_p, xd_p, -g_p, s_p, k_stop, c_stop_p)
         Fcf = n_w * m_w * kappa * r_w * w_e * w_e
         wd_e = (T_e + tqpf + tqpm - 2 * n_w * m_w * r_w * kappa * xd_p * w_e) / Jp
-        xdd_p = (Fcf - (F_p0 + k_p * x_p) - c_p * xd_p - Fap + Fst_p) / Mx_p
+        xdd_p = (Fcf - (F_p0 + k_p * (x_p + g_p)) - c_p * xd_p - Fap + Fst_p) / Mx_p
         if lock_engine:
             wd_e = 0.0
         # secondary
@@ -134,9 +144,9 @@ def run_loop(X, V, st, prm, eng_w, eng_T, h, nsteps, nout, lock_engine):
         KEb = 0.5 * m_node * np.sum(V * V)
         KEp = 0.5 * Jp * w_e * w_e + 0.5 * Mx_p * xd_p * xd_p
         KEs = 0.5 * (a11 * w_s * w_s + 2 * a12 * w_s * xd_s + a22 * xd_s * xd_s)
-        Usp = F_p0 * x_p + 0.5 * k_p * x_p * x_p
+        Usp = F_p0 * (x_p + g_p) + 0.5 * k_p * (x_p + g_p) ** 2
         Uss = F_l0 * x_s + 0.5 * k_l * x_s * x_s + 0.5 * k_t * (th_t0 + x_s / p_h) ** 2
-        E = KEb + KEp + KEs + Ub + Upp + Ups + Usp + Uss + Ust_p + Ust_s
+        E = KEb + KEp + KEs + Ub + Upp + Ups + Usp + Uss + Ust_p + Ust_s + U_hub
         Pst = Pst_p + Pst_s
         P_d = Pb + Pfp + Pfs + Pn + c_p * xd_p ** 2 + c_s * xd_s ** 2 + T_load * w_s + Pst
         P_in = T_e * w_e if not lock_engine else 0.0
@@ -204,9 +214,10 @@ def build(p, dt=None, kn_scale=1.0):
         se["k_linear"], p["derived"]["F_l0"], se["k_torsion"], p["derived"]["theta_t0"],
         se["c_axial"], se["stroke"],
         p["sheave"]["stop_k"], c_stop_p, c_stop_s,
-        veh["mass"], veh["tire_radius"], veh["final_drive"], veh["Crr"], 0.05, eng["rpm_cut"]],
+        veh["mass"], veh["tire_radius"], veh["final_drive"], veh["Crr"], 0.05, eng["rpm_cut"],
+        pr["engagement_gap"], k_n],
         dtype=np.float64)
-    st = np.array([eng["idle_rpm"] * np.pi / 30, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    st = np.array([eng["idle_rpm"] * np.pi / 30, -pr["engagement_gap"], 0.0, 0.0, 0.0, 0.0, 0.0])
     return dict(X=X, V=np.zeros_like(X), st=st, prm=prm,
                 eng_w=np.asarray(eng["rpm"], float), eng_T=np.asarray(eng["torque"], float),
                 h=float(dt or p["sim"]["dt"]), p=p)
@@ -225,6 +236,7 @@ def relax(model, t_relax=0.02):
         run_loop(X, V, st, prm, model["eng_w"], model["eng_T"], model["h"], n // 4, 2, True)
         V[:] = 0.0
     st[2] = 0.0; st[5] = 0.0; st[3] = 0.0; st[6] = 0.0
+    st[1] = min(st[1], -model["p"]["primary"]["engagement_gap"])
     st[0] = w0
     model["st"] = st
 

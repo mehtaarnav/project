@@ -81,13 +81,15 @@ by halving `h` (Phase 2).
 * `velocity_verlet(accel, x0, v0, t0, h, nsteps)`, `symplectic_euler(accel, x0, v0, t0, h, nsteps)` → `(t, X, V)`
 
 ## 8. NUMERIC TEST TARGETS (`tests/test_integrators.py`)
-SDOF `ẍ + ω² x = 0`, `ω = 2π`, `x0 = 1`, `v0 = 0`. Exact: `x = cos ωt`.
+SDOF `ẍ + ω² x = 0`, `ω = 2π`, `x0 = 1`, `v0 = 0`. Exact: `x = cos ωt`. Errors are
+`max_t |x(t) − cos ωt|` over `t ∈ [0, 1]`. Evaluating at `t = 1` alone (one period) cancels the
+leading phase error and shows spurious superconvergence.
 
 | Test | Target | Tolerance |
 |---|---|---|
 | T2.1 `genalpha_params(0.8)` | `(0.333333, 0.444444, 0.611111, 0.308642)` | abs 1e-6 |
-| T2.2 gen-α (ρ∞=0.8) error at t=1 for h = 1/100, 1/200, 1/400: observed order `log2(e_h/e_{h/2})` | 2.0 | ±0.15 |
-| T2.3 spectral radius of amplification matrix at `ωh = 1e4` for ρ∞ ∈ {0, 0.5, 0.8, 1} | = ρ∞ | abs 2e-3 |
+| T2.2 gen-α (ρ∞=0.8) max error on [0,1] for h = 1/100, 1/200, 1/400: observed order `log2(e_h/e_{h/2})` | 2.0 | ±0.15 |
+| T2.3 spectral radius of amplification matrix at `ωh = 1e5` (deviation from ρ∞ decays ≈ 22/(ωh)) for ρ∞ ∈ {0, 0.5, 0.8, 1} | = ρ∞ | abs 2e-3 |
 | T2.4 spectral radius ≤ 1 + 1e-12 for `ωh ∈ logspace(-3, 4, 200)`, ρ∞ ∈ {0, 0.5, 1} | unconditional stability | – |
 | T2.5 ρ∞=1: spectral radius = 1 for all `ωh` above | no dissipation | abs 1e-10 |
 | T2.6 Verlet order (same SDOF, h = 1/100…1/400) | 2.0 | ±0.15 |

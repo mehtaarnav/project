@@ -67,7 +67,11 @@ Strain energy `U = Σ_e ½ EA L0 ε² + Σ_k ½ (EI/L0) φ_k²`. Dissipated powe
   `m = ρA L0`. Linearize about the straight line. The transverse stiffness of
   each element is `T0/L0` (geometric stiffness). The mode-1 eigenvalue of the beaded string is
 
-      ω1 = 2 sqrt(T0/(m L0)) sin(π/(2N))                                    (B2)
+      ω1 = 2 sqrt(T0/(m l)) sin(π/(2N))                                     (B2)
+
+  where `l = ℓ/N` is the stretched spacing and `m = ρA l/(1+ε0)`. The mass is fixed
+  by the unstretched length, so (B2) equals the unstretched-spacing value times
+  `sqrt(1+ε0)`.
 
   As N→∞ this tends to `(π/ℓ) sqrt(T0/ρA)` (continuum string, `f = (1/2ℓ)√(T0/ρA)`).
   With bending, the continuum gives `ω² = (T0/ρA)k² + (EI/ρA)k⁴` with `k = π/ℓ`.
@@ -98,11 +102,11 @@ numba is importable and the identity otherwise. That lets Phase 2 call them from
 ## 7. NUMERIC TEST TARGETS (`tests/test_belt.py`)
 | Test | Setup | Target | Tol |
 |---|---|---|---|
-| T3.1 static stretch | open chain, L = 1 m, N = 50, EA = 243.5e3, P = 500 N, solve statics | δ = 2.05339e-3 m | rel 1e-9 |
-| T3.2 string, discrete | span ℓ=0.2 m, N=20 segments, T0=100 N, ρA=0.345 kg/m, EI=0: lowest transverse eigenfrequency of the linearized system (numerical Jacobian of `belt_forces`, open chain with ends fixed) | 42.5191 Hz (B2) | rel 1e-4 |
-| T3.3 string, continuum | same, N = 20 vs continuum 42.5628 Hz | rel 2e-3 |
+| T3.1 static stretch | open chain, L = 1 m, N = 50, EA = 243.5e3, P = 500 N, solve statics | δ = P L/EA = 2.0533881e-3 m | rel 1e-9 |
+| T3.2 string, discrete | span ℓ=0.2 m, N=20 segments, T0=100 N, ρA=0.345 kg/m, EI=0: lowest transverse eigenfrequency of the linearized system (numerical Jacobian of `belt_forces`, open chain with ends fixed) | 42.5278 Hz (B2, ε0 = T0/EA included) | rel 1e-4 |
+| T3.3 string, continuum | same, N = 20 vs continuum 42.5628 Hz | rel 2e-3 | – |
 | T3.4 string with bending | N = 100, EI = 0.05: compare to `sqrt((T0/ρA)k²+(EI/ρA)k⁴)/(2π)` | rel 2e-2 |
-| T3.5 time-domain string | integrate T3.2 with velocity Verlet (h = 1e-6, small amplitude 1e-4 m); measured period from zero crossings | 1/42.5191 s | rel 1e-3 |
+| T3.5 time-domain string | integrate T3.2 with velocity Verlet (h = 1e-6, small amplitude 1e-4 m); measured period from zero crossings | 1/42.5278 s | rel 1e-3 |
 | T3.6 energy | closed belt, EI>0, η=0, random small initial velocities, Verlet 1e4 steps | `max|ΔE|/E0 < 1e-3` | – |
 | T3.7 rigid rotation | closed belt on circle radius R rotating rigidly at ω, `η > 0`: damping force is zero | `|f_damp| < 1e-9` | – |
 | T3.8 length | `init_belt_on_path(0.0101964, 0.0305891, 0.251495, 200)` total polyline length vs `belt_length` (chord error) | rel 1e-3 | – |

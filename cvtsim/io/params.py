@@ -7,12 +7,24 @@ import yaml
 DEFAULT = pathlib.Path(__file__).with_name("dr26_default.yaml")
 
 
+def _num(x):
+    """YAML 1.1 reads exponents without a sign (e.g. 30.15e6) as strings."""
+    if isinstance(x, str):
+        try:
+            return float(x)
+        except ValueError:
+            return x
+    if isinstance(x, list):
+        return [_num(v) for v in x]
+    return x
+
+
 def _strip(node):
     if isinstance(node, dict):
         if "value" in node:
-            return node["value"]
-        return {k: _strip(v) for k, v in node.items() if k not in ("source", "unit")}
-    return node
+            return _num(node["value"])
+        return {k: _strip(v) for k, v in node.items() if k not in ("source", "unit", "note")}
+    return _num(node)
 
 
 def load_raw(path=DEFAULT):
