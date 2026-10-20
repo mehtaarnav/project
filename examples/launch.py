@@ -63,26 +63,41 @@ def main():
     # ---- energy balance
     rel = np.max(np.abs(s["resid"])) / max(np.max(np.abs(s["Win"])), 1e-12)
     print(f"energy residual max |dE-(Win-Wd)|/Win_final = {rel:.3e}")
+    np.savetxt(OUT / "energy.csv", np.column_stack([s["t"], col(res, "E_mech"), s["Win"],
+               col(res, "W_diss"), s["resid"]]), delimiter=",",
+               header="t,E_mech,W_in,W_diss,residual", comments="")
 
-    # ---- convergence: dt and penalty stiffness (shorter window covering engagement + early shift)
-    t_conv = min(t_end, 2.0 if not a.quick else 0.2)
-    conv_rows = []
-    cases = [("dt", dict(dt=model["h"])), ("dt/2", dict(dt=model["h"] / 2)),
-             ("kn x0.5", dict(kn_scale=0.5)), ("kn x2", dict(kn_scale=2.0))]
-    for name, kw in cases:
-        pp = load()
+    # ---- variants on a shorter window covering engagement and the shift:
+    #      time step and penalty stiffness (convergence), damping and flank angle (sensitivity)
+    t_var = min(t_end, 0.2 if a.quick else 1.5)
+    variants = [
+        ("baseline", {}, {}),
+        ("dt/2", {"dt": model["h"] / 2}, {}),
+        ("k_n x0.5", {"kn_scale": 0.5}, {}),
+        ("k_n x2", {"kn_scale": 2.0}, {}),
+        ("k_n x4", {"kn_scale": 4.0}, {}),
+        ("c_axial x0.5", {}, {"primary.c_axial": 5.0, "secondary.c_axial": 5.0}),
+        ("c_axial x2", {}, {"primary.c_axial": 20.0, "secondary.c_axial": 20.0}),
+        ("beta 43.3 deg (CAD)", {}, {"sheave.beta_deg": 43.3}),
+    ]
+    rows = []
+    for name, kw, ov in variants:
+        pp = load(overrides=ov)
         m2 = build(pp, dt=kw.get("dt"), kn_scale=kw.get("kn_scale", 1.0))
         relax(m2)
-        r2 = simulate(m2, t_conv, nout=500)
+        r2 = simulate(m2, t_var, nout=300)
         s2 = summarize(r2, pp)
-        conv_rows.append([name, s2["rpm"][-1], s2["v"][-1], col(r2, "x_p")[-1] * 1e3,
-                          col(r2, "x_s")[-1] * 1e3, np.max(col(r2, "T_tight")),
-                          np.max(np.hypot(col(r2, "Fx_s"), col(r2, "Fy_s")))])
-        print("conv", conv_rows[-1])
-    with open(OUT / "convergence.csv", "w") as f:
-        f.write(f"# t_window={t_conv}\ncase,rpm_end,v_end,x_p_end_mm,x_s_end_mm,T_tight_max,F_hub_s_max\n")
-        for r in conv_rows:
-            f.write(",".join(str(x) if isinstance(x, str) else f"{x:.6g}" for x in r) + "\n")
+        i_eng = int(np.argmax(col(r2, "Fa_p") > 1.0))
+        rows.append([name, s2["rpm"][i_eng], s2["rpm"][-1], s2["v"][-1],
+                     col(r2, "x_p")[-1] * 1e3, col(r2, "x_s")[-1] * 1e3,
+                     np.max(col(r2, "T_tight")), np.max(np.hypot(col(r2, "Fx_s"), col(r2, "Fy_s"))),
+                     np.max(np.abs(s2["resid"])) / max(s2["Win"][-1], 1e-12)])
+        print("variant", rows[-1])
+    hdr = "case,rpm_engage,rpm_end,v_end,x_p_end_mm,x_s_end_mm,T_tight_max,F_hub_s_max,energy_resid_rel"
+    with open(OUT / "variants.csv", "w") as f:
+        f.write(f"# t_window={t_var} s\n{hdr}\n")
+        for r in rows:
+            f.write(",".join([r[0]] + [f"{x:.6g}" for x in r[1:]]) + "\n")
 
     plots(res, s, sh, p)
 

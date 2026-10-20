@@ -84,6 +84,17 @@ weights fly out. That is real physics, not an error.
 (the "flyweight force grows with closure" effect; the brief requires it to
 arise from the kinematics). (P4) follows from (P2) via `∂F_fw/∂x_p = n m_w κ² ω²`.
 
+### 3.1 Engagement gap and hub bearing
+At full open, the primary groove is wider than the belt. The belt rides a free-running
+hub bearing at `r_p,min`, and the movable half travels an axial gap `g` before
+the flanks touch the belt. The coordinate `x_p ∈ [−g, s_p]` keeps (C1) as
+`r*_p = r_p,min + x_p/(2 tan β)`, so flank contact starts at `x_p = 0`. Spring
+compression and flyweight radius are measured from full open,
+`F_spring = F_p0 + k_p (x_p + g)` and `r_w = r_w0 + κ (x_p + g)`. (P3) and (P4)
+are therefore unchanged. The hub is a frictionless radial penalty with the flank stiffness `k_n`.
+`g` is a PLACEHOLDER (2 mm). With `g = 0` the secondary spring wedges the belt into the
+open primary, and the vehicle creeps at idle.
+
 ## 4. Secondary (helix cam + torsion + linear spring)
 
 Generalized coordinates: shaft angle `θ_s` and opening travel `x_s ∈ [0, s_s]`.
@@ -137,6 +148,7 @@ assumption (A5.4).
 | A5.4 | 435.63 N includes the torsion-spring axial share | ? (if not, ↓ secondary clamp by 54 N) |
 | A5.5 | Equal torque split between flanks in (S2) | exact only for symmetric slip; dynamics use actual τ_mov |
 | A5.6 | Hard stops modeled as stiff penalty (1e7 N/m, 5 % damping) | ? (stop impact loads depend on it) |
+| A5.7 | Frictionless hub bearing; engagement gap `g` = 2 mm placeholder | ? — `g` shifts the rpm at which torque first transmits |
 
 ## 7. Implementation contract (`cvtsim/cvt/`)
 * `geometry.py`: `belt_length(r1, r2, C)`, `derive_geometry(beta, s_p, s_s, i_low, i_high) -> dict(rp_min, rp_max, rs_min, rs_max, C, L)`,
