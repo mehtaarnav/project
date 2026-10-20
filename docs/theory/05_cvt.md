@@ -153,7 +153,7 @@ assumption (A5.4).
 | T5.2 engagement rpm, κ = 0.5 (P3) | 1725.66 rpm | rel 1e-5 |
 | T5.3 engagement rpm, κ = 1 | 1220.23 rpm | rel 1e-5 |
 | T5.4 negative-stiffness onset κ=0.5 (P4) | 2262.57 rpm (brief: "about 2,260") | rel 1e-5 |
-| T5.5 `k_net` sign: finite difference of `F_fw − F_spring` in x_p is < 0 at 2300 rpm and > 0 at 2200 rpm | – | – |
+| T5.5 `k_net = d(F_spring − F_fw)/dx_p` (finite difference) is < 0 at 2300 rpm and > 0 at 2200 rpm | – | – |
 | T5.6 secondary torsion axial preload | 54.009 N | rel 1e-4 |
 | T5.7 `secondary_static_force(0, 20)` | 435.63 + 10/0.0381 = 698.097 N | rel 1e-5 |
 | T5.8 `secondary_static_force(0.01, 0)` | 381.621 + 33.5366 + 3.930·(0.5236+0.26247)/0.0381 = 496.235 N | rel 1e-4 |
