@@ -52,6 +52,16 @@ bearings:
     C_N:
       value: null
       source: PLACEHOLDER (fill C from the actual roller bearing part number's catalogue rating)
+  ch440_main_pto_side:
+    type: ball
+    p: 3.0
+    bore_mm:
+      value: 35.0
+      source: "measured (Kohler CH440 service manual): main journal 34.975-34.989 mm, ball main bearing (series not stated)"
+    C_N:
+      value: 25500
+      range: [25500, 33200]
+      source: "UNVERIFIED range: 35 mm bore light series (6207-class, C ~ 25.5 kN) to medium series (6307-class, C ~ 33.2 kN) from catalogue memory; nominal is the conservative low end. Confirm the bearing part number with Rehlko"
 
 pto:
   allowable_side_load_N:
