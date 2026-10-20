@@ -92,6 +92,40 @@ def _meta(run_dir, p):
                    "tune": p.get("tune", "default")})
 
 
+def _mechanism(res, CH, snaps, p):
+    """Per-frame mechanism state for animation: spring compressions, helix twist and angle, ramp slope."""
+    c = lambda k: np.asarray(res[:, CH.index(k)], float)
+    t, ft = c("t"), np.asarray(snaps["t"], float)
+    at = lambda k: np.interp(ft, t, c(k))
+    d, pr, sc = p["derived"], p["primary"], p["secondary"]
+    x_p, x_s = np.asarray(snaps["x_p"], float), np.asarray(snaps["x_s"], float)
+    h = np.array([d["helix"](max(x, 0.0)) for x in x_s])
+    ramp = np.array([d["ramp"](max(x, 0.0)) for x in x_p])
+    return dict(
+        spring_p_compression=_lst(at("F_spr_p") / pr["k_spring"]),        # m, from free length
+        spring_s_compression=_lst(at("F_spr_s") / sc["k_linear"]),        # m, from free length
+        torsion_twist=_lst(d["theta_t0"] + h[:, 0]),                      # rad, pretwist + helix twist
+        helix_twist=_lst(h[:, 0]),                                        # rad, movable vs fixed half
+        helix_angle_deg=_lst(np.degrees(np.arctan(1.0 / (sc["r_cam"] * h[:, 1])))),
+        ramp_slope=_lst(ramp[:, 1]),                                      # dr_w/du
+    )
+
+
+def _events(res, CH, p):
+    """Times of engagement, belt lock-up (peak tight-side tension) and shift completion [s]."""
+    c = lambda k: np.asarray(res[:, CH.index(k)], float)
+    t = c("t")
+    ev = {}
+    eng = c("Fa_p") > 1.0
+    if eng.any():
+        ev["engagement"] = float(t[np.argmax(eng)])
+    ev["peak_belt_tension"] = float(t[np.argmax(c("T_tight"))])
+    sh = c("x_p") > 0.95 * p["derived"]["geometry"]["x_p_stop"]
+    if sh.any():
+        ev["shift_complete"] = float(t[np.argmax(sh)])
+    return ev
+
+
 def write_viewer(run_dir, res, CH, snaps, p, sh=None):
     """Write run_dir/viewer.json and return its path.
 
@@ -108,6 +142,9 @@ def write_viewer(run_dir, res, CH, snaps, p, sh=None):
         "series": _table({c: res[:, i] for i, c in enumerate(CH)}),
         "shafts": _table(_shaft_series(sh)) if sh else {},
     }
+    if {"F_spr_p", "F_spr_s", "Fa_p", "T_tight", "x_p"} <= set(CH):   # full simulation output
+        out["mechanism"] = _mechanism(res, CH, snaps, p)
+        out["events"] = _events(res, CH, p)
     path = run_dir / "viewer.json"
     path.write_text(json.dumps(out, separators=(",", ":")))
     return path
