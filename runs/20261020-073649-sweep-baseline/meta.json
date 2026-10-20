@@ -1,0 +1,11 @@
+{
+  "name": "sweep-baseline",
+  "group": "sweep",
+  "tags": [],
+  "started": "20261020-073649",
+  "commit": "f2f456a041ab1790e69ff5cf0bb7f723e54595c5",
+  "dirty": false,
+  "python": "3.13.16",
+  "host": "vm",
+  "wall_s": 0.1
+}
