@@ -97,9 +97,22 @@ def _apply_tune(p, tune):
         p["secondary"]["torsion_preload_deg"] = adj.pop("torsion_hole_deg")
     if adj:
         raise KeyError(f"unknown tune adjustments {sorted(adj)}")
-    for sec in ("engine", "vehicle", "belt", "sim"):
+    for sec in ("engine", "vehicle", "belt", "sim", "ratio"):
         p[sec].update(_strip(t.get(sec, {})))
     p["tune"] = dict(name=pathlib.Path(tune).stem, components=dict(t["components"]))
+
+
+def check_high_ratio(g, gm, stroke, i_high):
+    """Reject an overdrive stop the hardware cannot reach (primary radius, secondary radius, travel)."""
+    bad = []
+    if g["rp_max"] > gm["rp_mech_max"] + 1e-9:
+        bad.append(f"primary radius {g['rp_max'] * 1e3:.2f} mm > limit {gm['rp_mech_max'] * 1e3:.2f} mm")
+    if g["rs_min"] < gm["rs_mech_min"] - 1e-9:
+        bad.append(f"secondary radius {g['rs_min'] * 1e3:.2f} mm < limit {gm['rs_mech_min'] * 1e3:.2f} mm")
+    if g["x_p_stop"] > stroke + 1e-9:
+        bad.append(f"primary travel {g['x_p_stop'] * 1e3:.2f} mm > stroke {stroke * 1e3:.2f} mm")
+    if bad:
+        raise ValueError(f"ratio.high = {i_high} is not reachable: " + "; ".join(bad))
 
 
 def load(path=DEFAULT, overrides=None, tune=None):
@@ -125,6 +138,7 @@ def load(path=DEFAULT, overrides=None, tune=None):
     g = derive_geometry(beta, gm["belt_pitch_length"], gm["center_distance"],
                         gm["rp_mech_min"], gm["rs_mech_max"], p["primary"]["stroke"],
                         p["ratio"]["high"])
+    check_high_ratio(g, gm, p["primary"]["stroke"], p["ratio"]["high"])
     pr, s = p["primary"], p["secondary"]
     # primary: shim offset adds k_p * shim to the preload (09 section 1)
     shim = pr.get("shim", 0.0)

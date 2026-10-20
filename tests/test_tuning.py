@@ -269,3 +269,17 @@ def test_tune_library_sources_and_default():
     assert {"default", "heavy_flyweights", "stiff_primary", "progressive_helix"} <= set(tune_names())
     for name in tune_names():
         load(tune=name)
+
+
+def test_unreachable_overdrive_is_rejected():
+    """Ratio 0.43 (CVTech brochure) needs radii beyond the measured limits; 0.4642 does not."""
+    with pytest.raises(ValueError, match="primary radius 93.22 mm > limit 91.44 mm"):
+        load(overrides={"ratio.high": 0.43})
+    g = load(tune="stock_unrestricted")["derived"]["geometry"]
+    assert g["rp_max"] <= 0.09144 and g["rs_min"] >= 0.04242
+
+
+def test_measured_car_tune_changes_only_the_vehicle():
+    a, b = load(tune="measured_car"), load(tune="default")
+    assert a["vehicle"]["mass"] == 274.97 and a["vehicle"]["wheelbase"] == 1.4224
+    assert a["primary"] == b["primary"] and a["ratio"] == b["ratio"]
