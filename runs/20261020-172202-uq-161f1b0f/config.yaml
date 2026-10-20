@@ -1,0 +1,546 @@
+overrides:
+  primary.engagement_gap: 0.0080696
+  t_end: 2.0
+parameters:
+  base:
+    engine:
+      rpm:
+        value:
+        - 2400
+        - 2600
+        - 2800
+        - 3000
+        - 3200
+        - 3400
+        - 3600
+        source: BRIEF Kohler CH440 team-restricted chart
+      torque:
+        value:
+        - 25.08
+        - 24.54
+        - 23.59
+        - 22.51
+        - 20.88
+        - 19.66
+        - 18.3
+        unit: N*m
+        source: BRIEF; below 2400 rpm UNVERIFIED -> held constant (06 A6.1)
+      rpm_cut:
+        value: 3800
+        unit: rpm
+        source: 'team rule / ASSUMED governed speed: zero torque here (09 sec 3; 06
+          A6.2)'
+      governor_band:
+        value: 100
+        unit: rpm
+        source: ASSUMED linear torque cut below rpm_cut (09 sec 3). Chart held at
+          18.30 N*m from 3600 rpm up to the cut (UNVERIFIED). 200 reproduces the 06
+          taper 3600->3800
+      pulses:
+        value: true
+        source: 11 sec 1; false = mean-torque engine of 09 (T_eng = T_map, no reciprocating
+          inertia)
+      pto_model:
+        value: torsional
+        source: 11 sec 2; 'rigid' = one rotor J_f + J_c (mean-torque model of 05/09)
+      J_f:
+        value: 0.035
+        range:
+        - 0.025
+        - 0.05
+        unit: kg*m^2
+        source: ASSUMED crank + flywheel + magneto (11 sec 2); ask Rehlko
+      J_c:
+        value: 0.015
+        range:
+        - 0.01
+        - 0.025
+        unit: kg*m^2
+        source: PLACEHOLDER primary fixed half + spider + cover, flyweights excluded
+          (11 sec 2); weigh and CAD the clutch
+      bore:
+        value: 0.089
+        unit: m
+        source: Kohler CH440 published specs (engine-specs.net, listings) (11 sec
+          1)
+      stroke:
+        value: 0.069
+        unit: m
+        source: Kohler CH440 published specs (engine-specs.net, listings) (11 sec
+          1)
+      compression_ratio:
+        value: 8.0
+        source: Kohler CH440 published specs (engine-specs.net, listings) (11 sec
+          1)
+      rod_length:
+        value: 0.105
+        range:
+        - 0.095
+        - 0.115
+        unit: m
+        source: ASSUMED (lambda ~ 0.33; service manual not reachable) (11 sec 1)
+      m_rec:
+        value: 0.45
+        range:
+        - 0.35
+        - 0.6
+        unit: kg
+        source: ASSUMED piston + pin + rings + 1/3 rod for an 89 mm bore (11 sec 1)
+      wiebe_theta_s_deg:
+        value: -15.0
+        range:
+        - -25.0
+        - -5.0
+        source: ASSUMED typical SI combustion start, deg after TDC firing (11 sec
+          1)
+      wiebe_duration_deg:
+        value: 50.0
+        range:
+        - 40.0
+        - 65.0
+        source: ASSUMED typical SI burn duration (11 sec 1)
+      wiebe_a:
+        value: 5.0
+        source: ASSUMED Wiebe efficiency parameter (11 sec 1)
+      wiebe_m:
+        value: 2.0
+        source: ASSUMED Wiebe form factor (11 sec 1)
+      n_poly:
+        value: 1.3
+        source: ASSUMED polytropic exponent, compression and expansion (11 sec 1)
+      p_amb:
+        value: 101325.0
+        unit: Pa
+        source: ASSUMED ISA sea-level ambient; intake and exhaust at ambient (11 sec
+          1)
+      pulse_table_n:
+        value: 49152
+        source: 'numerical: 0.0146 deg gas-torque table; table mean converged to 6.0e-10
+          of the continuum (11 sec 1.1, tests/test_engine_friction.py)'
+      pto_d:
+        value: 0.0254
+        unit: m
+        source: CH440 1 in x 3.49 in straight PTO (consistent across listings, e.g.
+          PA-CH440-3275; 11 sec 2)
+      pto_length:
+        value: 0.0886
+        unit: m
+        source: CH440 PTO length 3.49 in (listings; 11 sec 2)
+      crank_web_length:
+        value: 0.03
+        range:
+        - 0.01
+        - 0.06
+        unit: m
+        source: ASSUMED equivalent crank-web length added to the PTO (11 sec 2)
+      key_width:
+        value: 0.00635
+        unit: m
+        source: DERIVED ASME B17.1 standard key for a 1 in shaft (1/4 in); UNVERIFIED
+          on the engine (11 sec 2)
+      pto_damping_ratio:
+        value: 0.02
+        source: ASSUMED modal damping of the PTO torsional mode (11 sec 2)
+      idle_rpm:
+        value: 1500
+        unit: rpm
+        source: PLACEHOLDER initial speed below derived engagement (1725.7 rpm)
+    ratio:
+      low:
+        value: 3.0
+        source: BRIEF (nominal; the model's low end is set by the primary hub radius,
+          giving 3.026)
+      high:
+        value: 0.8
+        source: BRIEF (not CVTech 0.43); imposed overdrive stop. Full hardware stroke
+          would reach ~0.49, limited by the secondary minimum radius
+    geometry:
+      belt_pitch_length:
+        value: 0.895
+        unit: m
+        source: CVTech BD52-2179-S catalog pitch length (archived CVTech Baja belt
+          table, UNVERIFIED secondary); matches team CVT_Inputs workbook L = 0.895
+          m
+      center_distance:
+        value: 0.232
+        unit: m
+        source: team A/B model; replace with the DR26 car's centres if different
+      rp_mech_min:
+        value: 0.026416
+        unit: m
+        source: team CVT_Inputs workbook rPmin = 1.04 in (mechCVT_params.m gives 31.50
+          mm; either way the secondary limits the low end)
+      rp_mech_max:
+        value: 0.09144
+        unit: m
+        source: stock hardware, science/stock_cvt/mechCVT_params.m:37-40
+      rs_mech_min:
+        value: 0.04242
+        unit: m
+        source: stock hardware, science/stock_cvt/mechCVT_params.m:37-40
+      rs_mech_max:
+        value: 0.09703
+        unit: m
+        source: stock hardware, science/stock_cvt/mechCVT_params.m:37-40
+    primary:
+      k_spring:
+        value: 13208.0
+        unit: N/m
+        source: BRIEF
+      F_preload:
+        value: 683.04
+        unit: N
+        source: BRIEF; spring force at belt contact = k (min preload 1.683 in + xPi
+          0.353 in), team CVT_model_v4
+      n_weights:
+        value: 3
+        source: BRIEF
+      m_weight:
+        value: 0.275
+        unit: kg
+        source: BRIEF
+      m_cover:
+        value: 0.0387
+        unit: kg
+        source: BRIEF (per weight, moves with weight)
+      r_w0:
+        value: 0.04445
+        unit: m
+        source: BRIEF; flyweight COM radius at belt contact (team CVT_Inputs rFly
+          = 1.75 in)
+      ramp_angle_deg:
+        value: 45.0
+        source: BRIEF straight-ramp assumption
+      kappa:
+        value: 0.5
+        source: DERIVED 1/(2 tan 45deg), double-face wedge; reproduces brief's ~2260
+          rpm; UNVERIFIED vs CAD (05 sec 3)
+      stroke:
+        value: 0.02548
+        unit: m
+        source: BRIEF; equals 2 tan(12 deg) x measured radius range 59.94 mm. Operating
+          travel is stopped at ratio 0.8 (17.82 mm)
+      engagement_gap:
+        value: 0.0089662
+        unit: m
+        source: 'team CVT_Inputs workbook xPi = 0.353 in (Primary Sheave Initial Travel):
+          movable-half travel from full open to belt contact; belt rides the hub bearing
+          until then'
+      m_axial:
+        value: 0.8
+        unit: kg
+        source: PLACEHOLDER movable half + spider axial mass
+      c_axial:
+        value: 10.0
+        unit: N*s/m
+        source: ASSUMED (brief); sensitivity run
+      mu_roller:
+        value: 0.05
+        range:
+        - 0.02
+        - 0.1
+        source: ASSUMED ramp roller rolling + pin friction, lumped (11 sec 3)
+    secondary:
+      k_linear:
+        value: 3353.66
+        unit: N/m
+        source: BRIEF
+      F_preload_equiv:
+        value: 435.63
+        unit: N
+        source: BRIEF equivalent preload (assumed to include torsion share, 05 A5.4)
+      k_torsion:
+        value: 3.93
+        unit: N*m/rad
+        source: BRIEF
+      torsion_preload_deg:
+        value: 30.0
+        source: BRIEF
+      r_cam:
+        value: 0.0381
+        unit: m
+        source: BRIEF
+      cam_angle_deg:
+        value: 45.0
+        source: BRIEF
+      stroke:
+        value: 0.02448
+        unit: m
+        source: 'BRIEF. CHECK: measured radii at 12 deg imply 23.22 mm (1.26 mm less);
+          travel used to ratio 0.8 is 16.28 mm'
+      m_axial:
+        value: 0.8
+        unit: kg
+        source: PLACEHOLDER movable half axial mass
+      J_movable:
+        value: 0.0015
+        unit: kg*m^2
+        source: PLACEHOLDER movable half polar inertia
+      J_shaft:
+        value: 0.002
+        unit: kg*m^2
+        source: PLACEHOLDER shaft + fixed half polar inertia
+      c_axial:
+        value: 10.0
+        unit: N*s/m
+        source: ASSUMED (brief); sensitivity run
+      mu_helix:
+        value: 0.1
+        range:
+        - 0.05
+        - 0.2
+        source: ASSUMED polymer/bronze button on aluminium helix (11 sec 3)
+    sheave:
+      beta_deg:
+        value: 12.0
+        source: Messick 2018 Fig 4.8; science/eCVT_params_legacy.m:32; docs/design/BELT_DATA.md
+          (stock primary measures 11.64 deg). Replaces the brief's 45 deg
+      r_outer_margin:
+        value: 0.003
+        unit: m
+        source: PLACEHOLDER sheave rim beyond the maximum mechanical pitch radius
+      stop_k:
+        value: 1.0e7
+        unit: N/m
+        source: ASSUMED stop penalty (05 A5.6)
+      mu_bushing:
+        value: 0.1
+        range:
+        - 0.05
+        - 0.15
+        source: ASSUMED PTFE/bronze movable-half bushing, both clutches (11 sec 3)
+      v_fric:
+        value: 0.001
+        unit: m/s
+        source: numerical tanh regularization of the clutch Coulomb friction (11 sec
+          3)
+    belt:
+      name:
+        value: CVTech BD52-2172-S proxy (geometry from the A/B model's BD52-2179-S)
+        source: BRIEF
+      G_hot:
+        value: 30.15e6
+        unit: Pa
+        source: Messick 2018 thesis sec. 4.1, DMA storage modulus at 60 C, CVTech
+          BD52-2172-S
+      G_cold:
+        value: 46.71e6
+        unit: Pa
+        source: BRIEF / Messick 2018 thesis (UNVERIFIED)
+      rho:
+        value: 1576.5
+        unit: kg/m^3
+        source: 'DERIVED: measured 0.437 kg/m (Messick 2018 sec. 4.6, 375 g belt)
+          / equivalent area 2.772e-4 m^2'
+      EA:
+        value: 243.5e3
+        unit: N
+        source: BRIEF (UNVERIFIED)
+      area:
+        value: 0.0002772
+        unit: m^2
+        source: Messick 2018 sec. 4.4, equivalent bending cross-section, CVTech BD52-2172-S
+      EI:
+        value: 0.2602
+        unit: N*m^2
+        source: 'Messick 2018 sec. 4.4: FEA of the cogged section, neutral axis at
+          the aramid yarns, E at 60 C'
+      k_radial:
+        value: 18.71e6
+        unit: N/m^2
+        source: 'Messick 2018 sec. 4.5: measured wedge (radial) stiffness per belt
+          length per radial penetration, 12 deg blocks, scaled to 60 C; 28.98e6 at
+          25 C'
+      eta:
+        value: 2.0e-06
+        unit: s
+        source: PLACEHOLDER Kelvin-Voigt time constant (uncalibrated); chosen so the
+          highest segment mode has damping ratio ~0.4 (explicit-step stable); low
+          modes nearly undamped
+      top_width:
+        value: 0.03
+        unit: m
+        source: PLACEHOLDER
+      flank_height:
+        value: 0.012
+        unit: m
+        source: PLACEHOLDER
+      mu:
+        value: 0.4
+        source: Gerbert range 0.3-0.5, value used by Messick 2018 sec. 6/7.4 and refs.
+          [6],[12] there (not measured; team workbook uses 0.3)
+      v_eps:
+        value: 0.05
+        unit: m/s
+        source: PLACEHOLDER friction regularization; convergence-checked
+      normal_damping_ratio:
+        value: 0.05
+        source: PLACEHOLDER flank damping fraction of critical
+      c_p:
+        value: 1700.0
+        unit: J/(kg*K)
+        source: ASSUMED rubber specific heat (09 sec 4)
+      h_conv:
+        value: 40.0
+        unit: W/(m^2*K)
+        source: ASSUMED film coefficient (09 sec 4)
+      f_slip_heat:
+        value: 0.5
+        source: ASSUMED belt share of flank slip heat (09 sec 4)
+      T_amb_C:
+        value: 40.0
+        unit: degC
+        source: ASSUMED ambient in the CVT case (09 sec 4); converted to K on load
+    vehicle:
+      mass:
+        value: 250.0
+        unit: kg
+        source: BRIEF
+      final_drive:
+        value: 8.1
+        source: BRIEF
+      tire_radius:
+        value: 0.2921
+        unit: m
+        source: BRIEF
+      Crr:
+        value: 0.02
+        source: 'SAE 2025-01-5069: off-road tires 0.01-0.02 dynamic, >= 0.02 static
+          (brief: 0.015)'
+      CdA:
+        value: 0.7
+        unit: m^2
+        source: 'SAE 2025-01-5069: C_d 0.44 x frontal area 1.3 m^2 (PLACEHOLDER) x
+          1.25 for rotating tires (docs/theory/10_validation.md)'
+      rho_air:
+        value: 1.2
+        unit: kg/m^3
+        source: standard air
+      model:
+        value: tire
+        source: '09 sec 3: vehicle speed is its own state, coupled by tire slip. ''rigid''
+          = 06 rigid driveline (v = w_s r_t/G)'
+      eta:
+        value: 0.9
+        source: ASSUMED gearbox + chain efficiency 0.88-0.95 (09 sec 3)
+      J_wheels:
+        value: 1.2
+        unit: kg*m^2
+        source: ASSUMED four wheels, 0.25-0.45 each (09 sec 3)
+      mu_t:
+        value: 0.7
+        source: ASSUMED tire peak friction, dirt 0.6-0.8 (09 sec 3)
+      s0:
+        value: 0.08
+        source: ASSUMED slip scale, about 76 % of peak force at s = s0 (09 sec 3)
+      v_min:
+        value: 0.5
+        unit: m/s
+        source: numerical slip-ratio floor (09 sec 3)
+      b_over_L:
+        value: 0.6
+        source: PLACEHOLDER static rear weight fraction (09 sec 3)
+      h_cg:
+        value: 0.5
+        unit: m
+        source: PLACEHOLDER centre-of-gravity height (09 sec 3)
+      wheelbase:
+        value: 1.5
+        unit: m
+        source: PLACEHOLDER (09 sec 3)
+    shafts:
+      material:
+        E: 200.0e9
+        nu: 0.3
+        source: PLACEHOLDER generic steel
+      primary:
+        note: 'crankshaft PTO stub: two engine main bearings, sheave overhung'
+        stations:
+          value:
+          - 0.0
+          - 0.1
+          - 0.14
+          - 0.16
+          unit: m
+        diameters:
+          value:
+          - 0.03
+          - 0.0254
+          - 0.0254
+          unit: m
+          source: PLACEHOLDER
+        bearings:
+          value:
+          - 0.0
+          - 0.1
+          unit: m
+          source: PLACEHOLDER
+        sheave_z:
+          value: 0.16
+          unit: m
+          source: PLACEHOLDER
+        torque_in_z:
+          value: 0.0
+          unit: m
+          source: PLACEHOLDER crank throw (torque reacted here)
+        critical:
+          z: 0.1
+          D: 0.03
+          d: 0.0254
+          r: 0.0015
+          source: PLACEHOLDER shoulder at outboard main bearing
+      secondary:
+        note: jackshaft on two bearings, sheave between them, output sprocket outboard
+        stations:
+          value:
+          - 0.0
+          - 0.05
+          - 0.12
+          - 0.15
+          unit: m
+        diameters:
+          value:
+          - 0.025
+          - 0.025
+          - 0.025
+          unit: m
+          source: PLACEHOLDER
+        bearings:
+          value:
+          - 0.0
+          - 0.12
+          unit: m
+          source: PLACEHOLDER
+        sheave_z:
+          value: 0.05
+          unit: m
+          source: PLACEHOLDER
+        output_z:
+          value: 0.15
+          unit: m
+          source: PLACEHOLDER
+        output_pitch_radius:
+          value: 0.04
+          unit: m
+          source: PLACEHOLDER output gear/sprocket pitch radius
+        critical:
+          z: 0.12
+          D: 0.03
+          d: 0.025
+          r: 0.0015
+          source: PLACEHOLDER shoulder at bearing 2
+    sim:
+      belt_nodes:
+        value: 200
+        source: numerical choice (L0 = 4.4 mm; >= 22 nodes in the smallest wrap)
+      dt:
+        value: 1.25e-07
+        unit: s
+        source: 'numerical choice: speeds and forces converged to 1e-3 against dt/2
+          after engagement (tests/test_system.py); 2.5e-7 missed by up to 1e-3 on
+          secondary speed'
+      t_end:
+        value: 8.0
+        unit: s
+        source: launch duration (covers the full upshift to 0.8)
+  tune: default

@@ -1,0 +1,163 @@
+overrides: {}
+parameters:
+  inputs:
+  - name: belt_mu
+    path: belt.mu
+    nominal: 0.4
+    low: 0.3
+    high: 0.5
+    source: Gerbert kinetic range 0.3-0.5, nominal 0.4 as Messick 2018 sec. 7.4 (team
+      workbook 0.3 is the low end)
+  - name: belt_k_radial
+    path: belt.k_radial
+    nominal: 18710000.0
+    low: 18710000.0
+    high: 28980000.0
+    source: 'Messick 2018 sec. 4.5: measured 28.98 MPa at 25 C, scaled to 18.71 MPa
+      at 60 C (belt temperature range)'
+  - name: belt_EI
+    path: belt.EI
+    nominal: 0.2602
+    low: 0.2602
+    high: 0.4031
+    source: Messick 2018 sec. 4.4 at 60 C; high end scaled by E(25 C)/E(60 C) = 140.1/90.45
+  - name: belt_v_eps
+    path: belt.v_eps
+    nominal: 0.05
+    low: 0.025
+    high: 0.1
+    source: PLACEHOLDER numerical regularization; factor-2 bracket about the convergence-checked
+      value
+  - name: kn_scale
+    path: build.kn_scale
+    nominal: 1.0
+    low: 0.5
+    high: 2.0
+    source: WORKFLOW section 3 penalty-convergence factors x0.5 and x2 (k_n is a physical
+      belt property and a penalty)
+  - name: belt_eta
+    path: belt.eta
+    nominal: 2.0e-06
+    low: 1.0e-06
+    high: 4.0e-06
+    source: PLACEHOLDER Kelvin-Voigt time constant, uncalibrated; factor-2 bracket
+      (upper end bounded by explicit-step stability)
+  - name: primary_c_axial
+    path: primary.c_axial
+    nominal: 10.0
+    low: 5.0
+    high: 20.0
+    source: ASSUMED (brief); factor-2 bracket for the sensitivity run the brief requests
+  - name: secondary_c_axial
+    path: secondary.c_axial
+    nominal: 10.0
+    low: 5.0
+    high: 20.0
+    source: ASSUMED (brief); factor-2 bracket for the sensitivity run the brief requests
+  - name: engine_J_e
+    path: engine.J_e
+    nominal: 0.05
+    low: 0.035
+    high: 0.075
+    source: PLACEHOLDER; range = sum of spec 11 section 2 ranges J_f [0.025, 0.050]
+      + J_c [0.010, 0.025]
+  - name: vehicle_CdA
+    path: vehicle.CdA
+    nominal: 0.7
+    low: 0.55
+    high: 0.85
+    source: frontal-area uncertainty with Cd 0.44 x 1.25 rotating-tire factor (SAE
+      2025-01-5069 basis in dr26_default.yaml)
+  - name: vehicle_Crr
+    path: vehicle.Crr
+    nominal: 0.02
+    low: 0.01
+    high: 0.03
+    source: 'SAE 2025-01-5069: off-road tires 0.01-0.02 dynamic, >= 0.02 static'
+  - name: vehicle_mu_t
+    path: vehicle.mu_t
+    nominal: 0.7
+    low: 0.6
+    high: 0.8
+    source: ASSUMED tire peak friction, dirt 0.6-0.8 (09 sec 3)
+  - name: sheave_stop_k
+    path: sheave.stop_k
+    nominal: 10000000.0
+    low: 3000000.0
+    high: 30000000.0
+    source: ASSUMED stop penalty (05 A5.6); factor-3 bracket, no measurement
+  - name: primary_engagement_gap
+    path: primary.engagement_gap
+    nominal: 0.0089662
+    low: 0.0080696
+    high: 0.0098628
+    source: ASSUMED +-10 % about the workbook xPi = 0.353 in (assembly and measurement
+      tolerance)
+  - name: engine_rod_length
+    path: engine.rod_length
+    nominal: 0.105
+    low: 0.095
+    high: 0.115
+    source: 'spec 11 section 1: ASSUMED (lambda ~ 0.33); requires spec-11 physics'
+  - name: engine_m_rec
+    path: engine.m_rec
+    nominal: 0.45
+    low: 0.35
+    high: 0.6
+    source: 'spec 11 section 1: ASSUMED piston + pin + rings + 1/3 rod; requires spec-11
+      physics'
+  - name: engine_wiebe_start_deg
+    path: engine.wiebe_start_deg
+    nominal: -15.0
+    low: -25.0
+    high: -5.0
+    source: 'spec 11 section 1: ASSUMED typical SI values; requires spec-11 physics'
+  - name: engine_wiebe_duration_deg
+    path: engine.wiebe_duration_deg
+    nominal: 50.0
+    low: 40.0
+    high: 65.0
+    source: 'spec 11 section 1: ASSUMED typical SI values; requires spec-11 physics'
+  - name: engine_J_f
+    path: engine.J_f
+    nominal: 0.035
+    low: 0.025
+    high: 0.05
+    source: 'spec 11 section 2: ASSUMED, ask Rehlko; requires spec-11 physics'
+  - name: primary_J_clutch
+    path: primary.J_clutch
+    nominal: 0.015
+    low: 0.01
+    high: 0.025
+    source: 'spec 11 section 2: PLACEHOLDER, weigh and CAD the clutch; requires spec-11
+      physics'
+  - name: pto_L_extra
+    path: pto.L_extra
+    nominal: 0.03
+    low: 0.01
+    high: 0.06
+    source: 'spec 11 section 2: ASSUMED equivalent crank-web length; requires spec-11
+      physics'
+  - name: clutch_mu_helix
+    path: clutch.mu_helix
+    nominal: 0.1
+    low: 0.05
+    high: 0.2
+    source: 'spec 11 section 3: ASSUMED polymer/bronze button on aluminium helix;
+      requires spec-11 physics'
+  - name: clutch_mu_roller
+    path: clutch.mu_roller
+    nominal: 0.05
+    low: 0.02
+    high: 0.1
+    source: 'spec 11 section 3: ASSUMED; requires spec-11 physics'
+  - name: clutch_mu_bushing
+    path: clutch.mu_bushing
+    nominal: 0.1
+    low: 0.05
+    high: 0.15
+    source: 'spec 11 section 3: ASSUMED PTFE/bronze bushing; requires spec-11 physics'
+  t_end: 2.0
+  k: 5
+  n: 30
+  seed: 0
