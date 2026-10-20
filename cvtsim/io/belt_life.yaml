@@ -1,0 +1,23 @@
+# Inputs for belt life and efficiency post-processing (docs/theory/13). Every entry carries a
+# source tag: PLACEHOLDER (not supplied, uncalibrated: never read a life as a prediction),
+# ASSUMED (rule or range without a citation), numerical choice. Loaded by cvtsim.post.belt_life.inputs().
+
+efficiency:
+  P_min: {value: 1.0, unit: W, source: "numerical choice: below this belt-side power eta is undefined (NaN), avoids standstill noise (13 sec 2)"}
+  ratio_edges: {value: [0.0, 1.0, 2.0, 4.0, 8.0], source: "numerical choice: bin edges for g = r*_s / r*_p (13 sec 2)"}
+  rpm_edges: {value: [0.0, 1500.0, 2500.0, 3500.0, 4500.0], unit: rpm, source: "numerical choice: bin edges for primary rpm (13 sec 2)"}
+
+fatigue:
+  N_ref: {value: 1.0e6, unit: cycles, source: "PLACEHOLDER uncalibrated rubber fatigue life at the reference strain (13 sec 3.3)"}
+  eps_ref: {value: 0.05, source: "PLACEHOLDER uncalibrated reference bending strain (13 sec 3.3)"}
+  k: {value: 5.0, source: "PLACEHOLDER power-law exponent of N_f = N_ref (eps_ref/eps)^k (13 sec 3.3)"}
+  h_n_fraction: {value: 0.5, source: "PLACEHOLDER neutral axis at mid flank height: h_n = fraction * belt.flank_height (13 sec 3.2)"}
+  duty: {value: 1.0, source: "PLACEHOLDER fraction of operating time spent in launch-like loading; 1 = every operating second is like this run (13 sec 3.4)"}
+
+temperature:
+  T_ref: {value: 313.15, unit: K, source: "ASSUMED reference = CVT ambient 40 degC (09 sec 4)"}
+  dT_half: {value: 10.0, unit: K, source: "ASSUMED rule of thumb: rubber life halves for every 10 K above T_ref. No citation; not calibrated for this belt (13 sec 1, 3.3)"}
+
+friction_fade:
+  c_lo: {value: 0.001, unit: 1/K, source: "ASSUMED lower end of the friction temperature coefficient range (diagnostic only; 13 sec 4)"}
+  c_hi: {value: 0.003, unit: 1/K, source: "ASSUMED upper end of the friction temperature coefficient range (diagnostic only; 13 sec 4)"}
