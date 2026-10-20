@@ -77,3 +77,7 @@ python -m cvtsim.inputs my_car.yaml --open
 pytest -q -m "not slow"     # about 6 min
 pytest -q                   # everything, including the coupled-system checks, about 15 min
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
