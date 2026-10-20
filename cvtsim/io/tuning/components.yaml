@@ -12,6 +12,18 @@ primary_springs:
     description: "stiffer rate, same preload (one change against brief)"
     k_spring: {value: 16000.0, unit: N/m, source: "PLACEHOLDER illustrative (+21 % rate; not a catalogue spring)"}
     F_preload: {value: 683.04, unit: N, source: "BRIEF (unchanged)"}
+  cvtech_0651_1101:
+    description: "CVTech 0651-1101 drive spring (kit), kit stock spring: 600 N engagement, 900 N max speed"
+    k_spring: {value: 11773.9, unit: N/m, source: "DERIVED (900 - 600) N / 25.48 mm full stroke (CVTech-AAB Mini-Baja sponsorship package, 'Additional information for drive pulley springs'); ASSUMED the max-speed load is at full stroke"}
+    F_preload: {value: 600.0, unit: N, source: "CVTech-AAB Mini-Baja sponsorship package, 'Additional information for drive pulley springs'; ASSUMED the engagement load is at belt contact"}
+  cvtech_0651_1100:
+    description: "CVTech 0651-1100 drive spring (white/green/pink): 850 N engagement, 1200 N max speed"
+    k_spring: {value: 13736.3, unit: N/m, source: "DERIVED (1200 - 850) N / 25.48 mm full stroke (CVTech-AAB Mini-Baja sponsorship package, 'Additional information for drive pulley springs'); ASSUMED the max-speed load is at full stroke"}
+    F_preload: {value: 850.0, unit: N, source: "CVTech-AAB Mini-Baja sponsorship package, 'Additional information for drive pulley springs'; ASSUMED the engagement load is at belt contact"}
+  cvtech_0551_1119:
+    description: "CVTech 0551-1119 drive spring (silver/pink/yellow): 450 N engagement, 950 N max speed"
+    k_spring: {value: 19623.2, unit: N/m, source: "DERIVED (950 - 450) N / 25.48 mm full stroke (CVTech-AAB Mini-Baja sponsorship package, 'Additional information for drive pulley springs'); ASSUMED the max-speed load is at full stroke"}
+    F_preload: {value: 450.0, unit: N, source: "CVTech-AAB Mini-Baja sponsorship package, 'Additional information for drive pulley springs'; ASSUMED the engagement load is at belt contact"}
 
 flyweights:
   brief:
@@ -19,6 +31,11 @@ flyweights:
     n_weights: {value: 3, source: BRIEF}
     m_weight: {value: 0.275, unit: kg, source: BRIEF}
     m_cover: {value: 0.0387, unit: kg, source: "BRIEF (per weight, moves with weight)"}
+  cvtech_0135_3065:
+    description: "CVTech 0135-3065 weight, 275 g, three per clutch (kit part; same mass as the brief)"
+    n_weights: {value: 3, source: "CVTech-AAB Mini-Baja package, driver pulley parts list item 15 (qty 3)"}
+    m_weight: {value: 0.275, unit: kg, source: "CVTech-AAB Mini-Baja package, 0135-3065 Weight 275 g"}
+    m_cover: {value: 0.0387, unit: kg, source: "BRIEF (per weight; cover not listed separately by CVTech)"}
   heavy_illustrative:
     description: "heavier weights, same covers (one change against brief)"
     n_weights: {value: 3, source: BRIEF}

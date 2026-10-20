@@ -1,0 +1,12 @@
+description: "Default set-up with the CVTech 0651-1100 drive spring (one change against default)."
+components:
+  primary_spring: cvtech_0651_1100
+  flyweights: brief
+  ramp: straight_45
+  secondary_spring: brief
+  torsion_spring: brief
+  helix: straight_45
+  surface: offroad
+adjust:
+  primary_shim: {value: 0.0, unit: m, source: "no shim"}
+  torsion_hole_deg: {value: 30.0, source: BRIEF}
