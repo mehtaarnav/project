@@ -25,7 +25,7 @@ def launch(res, CH, sh, p, metrics, run_name):
                           left=0.045, right=0.985, top=0.9, bottom=0.05)
     cards = [("engagement", f"{metrics['engage_rpm']:.0f}", "rpm", False),
              ("shift complete", "—" if np.isnan(metrics["t_shift_s"]) else f"{metrics['t_shift_s']:.2f}", "s", False),
-             (f"speed @ {t[-1]:g} s", f"{metrics['v_end_kmh']:.1f}", "km/h", False),
+             (f"speed @ {t[-1]:.1f} s", f"{metrics['v_end_kmh']:.1f}", "km/h", False),
              ("peak bearing*", f"{metrics['bearing_peak_N']:.0f}", "N", True),
              ("peak von mises*", f"{metrics['vm_peak_MPa']:.0f}", "MPa", True),
              ("energy residual / w_in", f"{metrics['energy_resid']:.0e}", "", False)]

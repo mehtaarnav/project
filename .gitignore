@@ -6,3 +6,4 @@ __pycache__/
 runs/*/series.csv.gz
 reference/
 cvtsim/io/CVT_Inputs.xlsx
+runs/*/snaps.npz
