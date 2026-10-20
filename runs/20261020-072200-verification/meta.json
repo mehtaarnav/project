@@ -1,0 +1,11 @@
+{
+  "name": "verification",
+  "group": "verification",
+  "tags": [],
+  "started": "20261020-072200",
+  "commit": "d61e72491f3d19835411cf36d25db9313c16ac12",
+  "dirty": false,
+  "python": "3.13.16",
+  "host": "vm",
+  "wall_s": 36.1
+}

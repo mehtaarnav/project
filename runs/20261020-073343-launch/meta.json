@@ -1,0 +1,11 @@
+{
+  "name": "launch",
+  "group": "baseline",
+  "tags": [],
+  "started": "20261020-073343",
+  "commit": "d61e72491f3d19835411cf36d25db9313c16ac12",
+  "dirty": false,
+  "python": "3.13.16",
+  "host": "vm",
+  "wall_s": 1.4
+}

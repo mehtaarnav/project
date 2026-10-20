@@ -1,0 +1,8 @@
+{
+  "order_gen_alpha": 1.9999703360263903,
+  "order_verlet": 2.0000243716986863,
+  "order_symplectic_euler": 1.004462494856404,
+  "kirsch_err_finest": 0.0004155750085315842,
+  "cantilever_err_finest": 8.038793812192283e-07,
+  "capstan_err_k1e7": 0.00027227984290137646
+}
