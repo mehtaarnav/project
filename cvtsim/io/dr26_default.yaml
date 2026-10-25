@@ -94,7 +94,7 @@ belt:
   top_width: {value: 0.030, unit: m, source: "PLACEHOLDER"}
   flank_height: {value: 0.012, unit: m, source: "PLACEHOLDER"}
   mu: {value: 0.4, source: "Gerbert range 0.3-0.5, value used by Messick 2018 sec. 6/7.4 and refs. [6],[12] there (not measured; team workbook uses 0.3)"}
-  v_eps: {value: 0.05, unit: m/s, source: "PLACEHOLDER friction regularization; convergence-checked"}
+  v_eps: {value: 0.0125, unit: m/s, source: "numerical stick-slip regularization. Peak loads converge here: halving it changes them by under 1.5 %, halving dt by under 0.6 % (docs/CONVERGENCE.md)"}
   normal_damping_ratio: {value: 0.05, source: "PLACEHOLDER flank damping fraction of critical"}
   c_p: {value: 1700.0, unit: J/(kg*K), source: "ASSUMED rubber specific heat (09 sec 4)"}
   h_conv: {value: 40.0, unit: W/(m^2*K), source: "ASSUMED film coefficient (09 sec 4)"}

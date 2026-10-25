@@ -22,6 +22,7 @@ MEAN = {"engine.pulses": False, "engine.pto_model": "rigid", "primary.mu_roller"
         "secondary.mu_helix": 0.0, "sheave.mu_bushing": 0.0,
        # belt as it was before Messick 2018 section properties were adopted
        "belt.area": 3.0e-4, "belt.rho": 1150.0, "belt.EI": 0.05, "belt.mu": 0.3, "belt.k_radial": None,
+       "belt.v_eps": 0.05,  # friction smoothing before docs/CONVERGENCE.md
 }
 
 

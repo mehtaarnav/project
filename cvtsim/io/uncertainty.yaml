@@ -9,7 +9,7 @@ inputs:
      source: "Messick 2018 sec. 4.5: measured 28.98 MPa at 25 C, scaled to 18.71 MPa at 60 C (belt temperature range)"}
   - {name: belt_EI, path: belt.EI, nominal: 0.2602, low: 0.2602, high: 0.4031,
      source: "Messick 2018 sec. 4.4 at 60 C; high end scaled by E(25 C)/E(60 C) = 140.1/90.45"}
-  - {name: belt_v_eps, path: belt.v_eps, nominal: 0.05, low: 0.025, high: 0.1,
+  - {name: belt_v_eps, path: belt.v_eps, nominal: 0.0125, low: 0.00625, high: 0.025,
      source: "PLACEHOLDER numerical regularization; factor-2 bracket about the convergence-checked value"}
   - {name: kn_scale, path: build.kn_scale, nominal: 1.0, low: 0.5, high: 2.0,
      source: "WORKFLOW section 3 penalty-convergence factors x0.5 and x2 (k_n is a physical belt property and a penalty)"}
