@@ -64,7 +64,40 @@ def test_torsion_family_counts_rainflow():
     t = np.linspace(0.0, 1.0, 7)
     T = np.array([0.0, 50.0, -50.0, 50.0, -50.0, 0.0, 0.0])
     f = du.shaft_fatigue(t, np.zeros_like(t), np.zeros_like(t), T, dict(d=0.025, r=0.002), (2.0, 1.5),
-                         SU, 500e6, "ground")
+                         SU, 500e6, "ground", win=3)
     assert f["N_rev"] == 0.0 and f["D_bend"] == 0.0
-    zt = 16 / (math.pi * 0.025 ** 3)
-    assert f["sa_env_MPa"] == pytest.approx(math.sqrt(3) * 1.5 * 50 * zt / 1e6, rel=1e-12)  # 7.3, M = 0
+
+
+def test_goodman_on_simultaneous_stresses():
+    """7.3: per sample, bending at that sample; torque half-range and mean over the window."""
+    rng = np.random.default_rng(4)
+    t = np.linspace(0.0, 1.0, 41)
+    M, T = 60 * rng.random(41), 80 * rng.random(41) - 20
+    d, win = 0.025, 5
+    f = du.shaft_fatigue(t, np.full_like(t, 50.0), M, T, dict(d=d, r=0.002), (2.0, 1.5), SU, 500e6, "ground", win)
+    zb, zt = 32 / (math.pi * d ** 3), 16 / (math.pi * d ** 3)
+    Se, Kf = f["Se_MPa"] * 1e6, f["Kf"]
+    best = math.inf
+    for i in range(41):
+        seg = T[max(0, i - 2):i + 3]
+        pad = [T[0]] * max(0, 2 - i) + list(seg) + [T[-1]] * max(0, i + 3 - 41)
+        ta, tm = 0.5 * (max(pad) - min(pad)), sum(pad) / 5
+        sa = math.sqrt((Kf * zb * M[i]) ** 2 + 3 * (1.5 * zt * ta) ** 2)
+        sm = math.sqrt(3) * 1.5 * zt * abs(tm)
+        best = min(best, 1 / (sa / Se + sm / SU))
+    assert f["n_goodman"] == pytest.approx(best, rel=1e-9)
+    vm = np.sqrt((zb * M) ** 2 + 3 * (zt * T) ** 2).max()
+    assert f["n_yield"] == pytest.approx(500e6 / vm, rel=1e-12)
+
+
+def test_primary_section_carries_pto_torque():
+    """The crank PTO section is loaded by T_pto (belt torque + clutch inertia + pulses), not tq_p."""
+    from cvtsim.cvt.system import CH
+    from cvtsim.fe.shaft_loads import shaft_histories
+    from cvtsim.io.params import load
+    res = np.zeros((3, len(CH)))
+    res[:, CH.index("t")] = [0.0, 0.1, 0.2]
+    res[:, CH.index("T_pto")] = [40.0, 250.0, 40.0]
+    res[:, CH.index("tq_p")] = -40.0
+    sh = shaft_histories(res, load(), CH)
+    assert np.allclose(np.abs(sh["T_prim"]), [40.0, 250.0, 40.0])

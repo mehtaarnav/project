@@ -62,9 +62,12 @@ def shaft_histories(res, p, CH):
     mat = p["shafts"]["material"]
     sp, ss = p["shafts"]["primary"], p["shafts"]["secondary"]
     zero = np.zeros(res.shape[0])
-    # primary: belt hub force + belt torque at sheave; engine torque reacted at crank station
+    # primary: belt hub force at the sheave; torsion is the PTO torque T_pto (11 section 2), which
+    # carries the belt torque plus clutch inertia and the firing pulses. Applied at the sheave with
+    # the sign of a load on the shaft (-T_pto, as tq_p ~ -T_pto in steady drive), reacted at the crank.
+    # Crank-train gas and inertia forces on the main bearings are not included (belt load only).
     Rp, Mp, Tp, vmp, ktp = _history(res, CH, sp, mat,
-                                    [(sp["sheave_z"], c("Fx_p"), c("Fy_p"), c("tq_p"))],
+                                    [(sp["sheave_z"], c("Fx_p"), c("Fy_p"), -c("T_pto"))],
                                     sp["bearings"], sp["torque_in_z"], sp["critical"])
     # secondary: belt hub force + belt torque at sheave; output gear force (PLACEHOLDER: along -Y,
     # magnitude T/r_pitch) and torque reaction at output station

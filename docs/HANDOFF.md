@@ -44,8 +44,9 @@ older and has not been updated since the first merge.
 | Speed at 8 s | 56.9 km/h (measured band 53–63) |
 | Peak belt tension | 1623 N |
 | PTO side load | 1408 N (85 N·m at the mounting face) |
-| Goodman factor, crank PTO / jackshaft | 1.86 / 0.81 (time-matched check: 0.99 at lock-up, 1.92 s) |
-| PTO main bearing | equivalent load 1089 N; 809 N rating needed for 1000 launches |
+| Goodman factor, crank PTO / jackshaft | 1.44 / 1.07 (simultaneous stresses; recomputed after the review fixes, the run files still show the old 1.86 / 0.81) |
+| Yield factor, crank PTO / jackshaft | 3.8 / 3.2 |
+| PTO main bearing | equivalent load 1089 N from the belt only; engine gas and inertia loads are not included |
 
 The jackshaft and crank numbers rest on placeholder shaft geometry and material.
 
@@ -59,6 +60,7 @@ Sensitivity ranking for the PTO loads, largest first:
 ## Open work, in order
 1. **Done:** the sensitivity bands (`runs/20261020-215336-uq-bands`, 30 samples, first 2 s) and a
    hill climb (`runs/20261020-213705-tune-default-hill_climb`) are committed.
+   * The bands predate the review fixes and used a stale screen; rerun both before quoting them.
    * 5–95 % ranges: peak bearing load 2.8–5.6 kN, peak PTO side load 1.0–1.5 kN, jackshaft Goodman
      factor 0.50–0.99.
    * The upper tail comes from the engagement and lock-up transient.

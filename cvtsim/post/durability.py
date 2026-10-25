@@ -12,8 +12,7 @@ import numpy as np
 import yaml
 
 from cvtsim.fe import bearings as brg
-from cvtsim.fe.fatigue import (basquin_constants, endurance_limit, fatigue_kf, goodman_n,
-                               notch_sensitivity, rainflow, yield_n)
+from cvtsim.fe.fatigue import basquin_constants, endurance_limit, fatigue_kf, notch_sensitivity, rainflow
 
 MATERIALS = Path(__file__).resolve().parents[1] / "io" / "materials.yaml"
 SQ3 = math.sqrt(3.0)
@@ -44,38 +43,59 @@ def _damage(sa, sm, n, Su, Se):
     return float(np.sum(n[hit] / (seq[hit] / A) ** (1.0 / b)))
 
 
-def shaft_fatigue(t, w, M, T, crit, Kt, Su, Sy, finish):
-    """Fatigue of one critical section (7.1-7.3). Stresses in Pa, Su/Sy in Pa.
+def _window_stats(T, win):
+    """Moving half-range and mean of T over a centred window of `win` samples (7.3)."""
+    from scipy.ndimage import maximum_filter1d, minimum_filter1d, uniform_filter1d
+    T = np.asarray(T, float)
+    win = max(int(win), 1)
+    return (0.5 * (maximum_filter1d(T, win, mode="nearest") - minimum_filter1d(T, win, mode="nearest")),
+            uniform_filter1d(T, win, mode="nearest"))
 
-    crit: dict(d, r) [m]; Kt: (Kt_bending, Kt_torsion). Returns dict of scalars.
+
+def shaft_fatigue(t, w, M, T, crit, Kt, Su, Sy, finish, win=1):
+    """Fatigue and yield of one critical section (7.1-7.3). Stresses in Pa, Su/Sy in Pa.
+
+    crit: dict(d, r) [m]; Kt: (Kt_bending, Kt_torsion); win: samples in one firing period, the
+    window for the local torque amplitude and mean. Returns dict of scalars.
     """
     d = crit["d"]
     q = notch_sensitivity(crit["r"] * 1e3, Su / 1e6)
     Kf, Kfs = fatigue_kf(Kt[0], q), Kt[1]
     Se = endurance_limit(Su / 1e6, finish, d * 1e3)
     zb, zt = 32.0 / (math.pi * d ** 3), 16.0 / (math.pi * d ** 3)
+    M, T = np.asarray(M, float), np.asarray(T, float)
     dN = revolutions(t, w)
     # bending family: one fully reversed cycle per revolution, mean from the torque
     sa_b = Kf * zb * np.abs(_mid(M))
     sm_b = SQ3 * Kfs * zt * np.abs(_mid(T))
     D_b = _damage(sa_b, sm_b, dN, Su, Se)
+    seq_b = sa_b / np.maximum(1.0 - sm_b / Su, 1e-12)
+    rev_above = float(dN[seq_b >= Se].sum())
     # torsion family: rainflow of T(t)
-    cyc = rainflow(np.asarray(T, float)) if len(T) > 1 else []
+    cyc = rainflow(T) if len(T) > 1 else []
     if cyc:
         rng, mean, cnt = (np.array(c, float) for c in zip(*cyc))
         D_t = _damage(SQ3 * Kfs * zt * 0.5 * rng, SQ3 * Kfs * zt * np.abs(mean), cnt, Su, Se)
-        ta_max = 0.5 * zt * rng.max()
     else:
-        D_t, ta_max = 0.0, 0.0
-    # peak envelope (A12.1)
-    sa_env = math.sqrt((Kf * zb * np.abs(M).max()) ** 2 + 3.0 * (Kfs * ta_max) ** 2)
-    sm_env = SQ3 * Kfs * zt * np.abs(T).max()
+        D_t = 0.0
+    # Goodman on simultaneous stresses: bending at each sample, torque amplitude and mean over
+    # one firing period around it (7.3). Its minimum is an infinite-life check.
+    ta, tm = _window_stats(T, win)
+    sa = np.sqrt((Kf * zb * M) ** 2 + 3.0 * (Kfs * zt * ta) ** 2)
+    sm = SQ3 * Kfs * zt * np.abs(tm)
+    n_t = 1.0 / np.maximum(sa / Se + sm / Su, 1e-300)
+    i = int(np.argmin(n_t))
+    # yield: peak nominal von Mises (no notch factors, ductile material)
+    vm = np.sqrt((zb * M) ** 2 + 3.0 * (zt * T) ** 2)
     D = D_b + D_t
     return dict(Kf=Kf, Kfs=Kfs, q=q, Se_MPa=Se / 1e6, N_rev=float(dN.sum()),
-                D_bend=D_b, D_tors=D_t, D=D, launches_to_failure=(1.0 / D if D > 0 else None),  # None: no cycle above Se, life not bounded by this model
-                sa_env_MPa=sa_env / 1e6, sm_env_MPa=sm_env / 1e6,
-                n_goodman=goodman_n(sa_env, sm_env, Se, Su) if sa_env + sm_env > 0 else math.inf,
-                n_yield=yield_n(Sy, sa_env, sm_env) if sa_env + sm_env > 0 else math.inf)
+                D_bend=D_b, D_tors=D_t, D=D,
+                launches_to_failure=(1.0 / D if D > 0 else None),  # None: no cycle above Se, life not bounded by this model
+                rev_above_Se=rev_above,
+                n_goodman=float(n_t[i]), t_goodman_min=float(np.asarray(t)[i]),
+                sa_MPa=float(sa[i]) / 1e6, sm_MPa=float(sm[i]) / 1e6,
+                vm_nominal_peak_MPa=float(vm.max()) / 1e6,
+                n_yield=(Sy / vm.max() if vm.max() > 0 else math.inf))
 
 
 def bearing_life(t, w, R, C=None, p=brg.P_BALL, target_launches=None, target_hours=None):
@@ -139,8 +159,10 @@ def launch_durability(res, CH, sh, p, mats=None):
     for name, tag, w in (("primary", "prim", c("w_c")), ("secondary", "sec", c("w_s"))):
         cfg, sd = du[name], p["shafts"][name]
         Su, Sy = _material(mats, cfg["material"])
+        w_run = np.median(np.abs(c("w_e"))[c("w_e") > 1.0]) if (c("w_e") > 1.0).any() else 1.0
+        win = 4.0 * np.pi / w_run / float(np.median(np.diff(t)))  # one firing period, 4-stroke
         fat = shaft_fatigue(t, w, sh[f"M_{tag}"], sh[f"T_{tag}"], sd["critical"],
-                            sh["kt"][name], Su, Sy, cfg["finish"])
+                            sh["kt"][name], Su, Sy, cfg["finish"], win)
         brs = []
         for j, key in enumerate(cfg["bearings"]):
             C, pe = _rating(mats, key)
@@ -161,6 +183,7 @@ def summary_metrics(d):
         m[f"n_goodman_{tag}"] = f["n_goodman"]
         m[f"n_yield_{tag}"] = f["n_yield"]
         m[f"damage_{tag}"] = f["D"]
+        m[f"rev_above_Se_{tag}"] = f["rev_above_Se"]
         for j, b in enumerate(d[name]["bearings"]):
             m[f"P_eq_{tag}{j+1}_N"] = b["P_eq_N"]
             m[f"C_req_{tag}{j+1}_N"] = b.get("C_req_N", math.nan)

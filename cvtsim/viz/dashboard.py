@@ -37,7 +37,7 @@ def launch(res, CH, sh, p, metrics, run_name):
            ("PTO face moment", g("pto_face_moment_Nm", "{:.0f}"), "N·m", True),
            ("Goodman, crank PTO*", g("n_goodman_prim", "{:.2f}"), "", True),
            ("Goodman, jackshaft*", g("n_goodman_sec", "{:.2f}"), "", True),
-           ("PTO main bearing P_eq", g("P_eq_prim2_N", "{:.0f}"), "N", False),
+           ("PTO main bearing P_eq, belt only", g("P_eq_prim2_N", "{:.0f}"), "N", True),
            ("jackshaft bearing C needed*", g("C_req_sec1_N", "{:.0f}"), "N", True)]
     for i, (lab, val, unit, acc) in enumerate(dur):
         S.card(fig.add_subplot(gs[1, i]), lab, val, unit, acc)

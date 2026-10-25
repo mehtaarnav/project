@@ -135,7 +135,7 @@ bending cycle per revolution with amplitude `M(t)` at that instant. In discrete 
 * Primary: the crank PTO turns at the clutch speed `w_c`.
 * Secondary: the jackshaft turns at `w_s`.
 
-This replaces A12.1 (peak moment for all cycles) for damage. The Goodman factor keeps A12.1 (§7.3).
+This replaces A12.1 (peak moment for all cycles) for damage and for the Goodman factor (§7.3).
 
 ### 7.2 Damage
 Two load families are summed in Miner (assumption A12.7):
@@ -153,17 +153,31 @@ Notch factors:
 
 Endurance limit: `Se` from §2.4, with the finish and `d` of the section, and kc = kd = ke = kf = 1.
 
-### 7.3 Goodman and yield (peak envelope)
-Assumption A12.1 applies.
-* `σ_a' = sqrt((Kf σ_b,max)² + 3 (Kfs τ_a,max)²)`, where `τ_a,max` is the largest rainflow torque
-  half-range.
-* `σ_m' = √3 Kfs |τ|max`.
-* Results: `n` from §2.5 and `n_y = Sy / (σ_a' + σ_m')`.
+### 7.3 Goodman and yield
+**Goodman on simultaneous stresses.** At each sample, the bending is the instantaneous `M(t)`.
+The torque amplitude `τ_a(t)` and mean `τ_m(t)` are the half-range and mean of `T` over one
+firing period centred on the sample (`4π/ω̄` for a four-stroke at the median running speed).
+    σ_a'(t) = sqrt((Kf · 32 M / π d³)² + 3 (Kfs τ_a)²),   σ_m'(t) = √3 Kfs |τ_m|
+    n = min_t 1 / (σ_a'/Se + σ_m'/Su)
+This replaces the earlier peak envelope. That envelope used the whole-launch torque range as an
+amplitude and the peak torque as a mean, so it counted the same torque twice.
+
+`n < 1` at one instant fails only the infinite-life test. Whether that matters is judged by the
+revolutions above the endurance limit (`rev_above_Se`) and by Miner damage (§7.2).
+
+**Yield.** `n_y = Sy / max_t σ_vm`, with `σ_vm = sqrt((32 M/π d³)² + 3 (16 T/π d³)²)`. Nominal
+stresses only, with no notch factors, which is the usual check for a ductile shaft.
+
+**Primary torsion.** The crank PTO section carries the PTO torque `T_pto` (11 §2). That torque is
+the belt torque plus clutch inertia and the firing pulses. Earlier versions used the belt torque
+alone, which understated the section torque by up to 2.5x in the 8 s launch.
 
 ### 7.4 Bearings
 Bearing `j` carries the radial reaction magnitude `R_j(t)`. Within the launch:
 * `P_eq` comes from §3, weighted by the revolutions `ΔN_i`.
 * Mean speed: `n̄ = N_rev / t_launch · 60` rpm.
+* The primary reactions are the belt contribution only: crank-train gas and inertia forces on the
+  engine main bearings are not in the shaft model.
 * With a rating `C`: launches to L10 = `(C / P_eq)^p · 1e6 / N_rev`, and L10h at `P_eq` and `n̄`.
 * Always: the rating needed for an L10 of `n_L` launches, `C_req = P_eq (n_L N_rev / 1e6)^(1/p)`
   (`durability.target_launches`), and the hours form `C_req = P_eq (60 n̄ L_h / 1e6)^(1/p)`.
