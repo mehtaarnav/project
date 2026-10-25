@@ -1,0 +1,27 @@
+calibration:
+  K: 0.00012528502902296913
+  g1: 1.3067988109161317
+  g2: -0.40151623417751514
+  c_s: 0.7240448436553272
+  c_s2: -0.39350080841259855
+fitted_on: runs/20261020-211533-tune-default
+cost: 238.39570053740067
+checks_fit:
+  rpm_rms: 0.03159061651252896
+  rpm_ok: true
+  xp_rms_mm: 1.1580716239430062
+  xp_ok: true
+  v_end: 0.01153464483369716
+  v_ok: true
+  engage: 0.010831804568138828
+  engage_ok: true
+validated_on: runs/20261020-213705-tune-default-hill_climb
+checks_validation:
+  rpm_rms: 0.0352418284057147
+  rpm_ok: true
+  xp_rms_mm: 1.4646917346573387
+  xp_ok: true
+  v_end: 0.06830000152228732
+  v_ok: false
+  engage: 0.010831804568138828
+  engage_ok: true
