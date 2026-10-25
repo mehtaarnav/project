@@ -1,0 +1,13 @@
+{
+  "name": "tune-default-backshift",
+  "group": "tune",
+  "tags": [
+    "default"
+  ],
+  "started": "20261025-201504",
+  "commit": "39b18e675776f5bc1944b053597e0e1d31d7a7e9",
+  "dirty": false,
+  "python": "3.13.16",
+  "host": "vm",
+  "wall_s": 7.7
+}

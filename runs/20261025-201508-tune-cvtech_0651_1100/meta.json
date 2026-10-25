@@ -1,0 +1,13 @@
+{
+  "name": "tune-cvtech_0651_1100",
+  "group": "tune",
+  "tags": [
+    "cvtech_0651_1100"
+  ],
+  "started": "20261025-201508",
+  "commit": "39b18e675776f5bc1944b053597e0e1d31d7a7e9",
+  "dirty": false,
+  "python": "3.13.16",
+  "host": "vm",
+  "wall_s": 6.6
+}

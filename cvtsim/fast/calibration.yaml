@@ -1,27 +1,45 @@
 calibration:
-  K: 0.00012528502902296913
-  g1: 1.3067988109161317
-  g2: -0.40151623417751514
-  c_s: 0.7240448436553272
-  c_s2: -0.39350080841259855
-fitted_on: runs/20261020-211533-tune-default
-cost: 238.39570053740067
-checks_fit:
-  rpm_rms: 0.03159061651252896
-  rpm_ok: true
-  xp_rms_mm: 1.1580716239430062
-  xp_ok: true
-  v_end: 0.01153464483369716
-  v_ok: true
-  engage: 0.010831804568138828
-  engage_ok: true
-validated_on: runs/20261020-213705-tune-default-hill_climb
-checks_validation:
-  rpm_rms: 0.0352418284057147
-  rpm_ok: true
-  xp_rms_mm: 1.4646917346573387
-  xp_ok: true
-  v_end: 0.06830000152228732
-  v_ok: false
-  engage: 0.010831804568138828
-  engage_ok: true
+  K: 0.00028582499337358137
+  g1: 2.5285691675658684
+  g2: -1.6787869021230828
+  c_s: 0.5678094226302864
+  c_s2: 0.08109894397246713
+cost: 451.05320095379415
+fit:
+  20261020-211533-tune-default:
+    rpm_rms: 0.032131731337878014
+    rpm_ok: true
+    xp_rms_mm: 1.08152129616341
+    xp_ok: true
+    v_end: 0.007101297171193034
+    v_ok: true
+    engage: 0.004092660300430699
+    engage_ok: true
+  20261020-213705-tune-default-hill_climb:
+    rpm_rms: 0.040951848103944276
+    rpm_ok: true
+    xp_rms_mm: 1.1635638772583812
+    xp_ok: true
+    v_end: 0.033228217410057395
+    v_ok: false
+    engage: 0.004092660300430699
+    engage_ok: true
+validation:
+  20261025-201504-tune-default-backshift:
+    rpm_rms: 0.036358495464168944
+    rpm_ok: true
+    xp_rms_mm: 1.076211204553866
+    xp_ok: true
+    v_end: 0.004161797244328771
+    v_ok: true
+    engage: 0.004092660300430699
+    engage_ok: true
+  20261025-201508-tune-cvtech_0651_1100:
+    rpm_rms: 0.031202574595406367
+    rpm_ok: true
+    xp_rms_mm: 1.010357694966678
+    xp_ok: true
+    v_end: 0.0072361910423873336
+    v_ok: true
+    engage: 0.0056161640453152965
+    engage_ok: true

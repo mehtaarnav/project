@@ -51,6 +51,28 @@ Each run is saved under `runs/<date>-<name>/` and contains:
 Open the mechanism viewer to play a run back: start `python -m http.server`, then go to
 `viewer/index.html?run=../runs/<run>/viewer.json`.
 
+## Fast model
+
+`cvtsim.fast` replaces the segmented belt with belt-length closure, a clamp-force balance and a
+stick–slip belt clutch. It uses the same parts, engine, tire and scenarios as the full model. An
+8 s launch takes about 10 ms instead of about 30 min, which makes whole events and part sweeps
+practical.
+
+Its few belt constants are fitted to full-model runs (`python -m cvtsim.fast.calibrate`). On
+full-model runs it was not fitted to (a throttle lift, and a stiffer spring), it matches:
+* engine speed within 3.6 %;
+* primary travel within 1.1 mm;
+* final speed within 0.7 %.
+
+Use the full model for peak shaft and bearing loads; the fast model has no firing pulses and no
+PTO twist. See [docs/theory/15_fast_cvt.md](docs/theory/15_fast_cvt.md).
+
+```python
+from cvtsim.io.params import load
+from cvtsim.fast.model import build_fast, simulate_fast, FCH
+res = simulate_fast(build_fast(load(tune="cvtech_stock"), scenario="hill_climb"), 8.0)
+```
+
 ## Your car
 
 The DR26 car is the example. Copy its parameter file, replace the numbers, and run with

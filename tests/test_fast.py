@@ -64,3 +64,20 @@ def test_runs_every_scenario_quickly(p):
         t0 = time.time()
         r = simulate_fast(build_fast(p, scenario=sc), sc["t_end"])
         assert np.all(np.isfinite(r)) and time.time() - t0 < 5.0
+
+
+FULL_RUNS = ["runs/20261020-211533-tune-default", "runs/20261020-213705-tune-default-hill_climb",
+             "runs/20261025-201504-tune-default-backshift", "runs/20261025-201508-tune-cvtech_0651_1100"]
+
+
+@pytest.mark.parametrize("run", FULL_RUNS[2:])
+def test_calibration_validates_on_unseen_runs(run):
+    """Section 5 acceptance checks on full-model runs not used in the fit (needs their series)."""
+    from pathlib import Path
+    from cvtsim.fast.calibrate import checks, load_full, run_on
+    from cvtsim.fast.model import load_calibration
+    if not (Path(run) / "series.csv.gz").exists():
+        pytest.skip("full-model series not present (git-ignored)")
+    full = load_full(run)
+    c = checks(full, run_on(full, load_calibration()))
+    assert c["rpm_ok"] and c["xp_ok"] and c["v_ok"] and c["engage_ok"], c

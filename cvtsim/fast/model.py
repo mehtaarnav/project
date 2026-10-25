@@ -24,6 +24,14 @@ FCH = ["t", "w_e", "w_s", "x_p", "x_s", "r_p", "r_s", "F_fw", "F_spr", "F_p", "F
 NG = 4001  # geometry table points (15 section 2)
 
 
+def load_calibration():
+    """Fitted constants from cvtsim/fast/calibration.yaml (15 section 5), or {} if absent."""
+    import pathlib
+    import yaml
+    q = pathlib.Path(__file__).with_name("calibration.yaml")
+    return yaml.safe_load(q.read_text())["calibration"] if q.exists() else {}
+
+
 def geometry_table(g):
     """r_s, phi_p, phi_s on a uniform grid of x_p in [0, x_p_stop] (15 section 2)."""
     x = np.linspace(0.0, g["x_p_stop"], NG)
@@ -40,7 +48,7 @@ def build_fast(p, scenario=None, cal=None):
     g = p["derived"]["geometry"]
     xg, rsg, phpg, phsg = geometry_table(g)
     b = p["belt"]
-    c = dict(CAL_DEFAULT, **(cal or {}))
+    c = dict(CAL_DEFAULT, **(load_calibration() if cal is None else cal))
     r_w0 = float(pp_eval(full["rk"], full["rc"], 0.0)[0])
     sc = dict(
         J_e=v["J_f"] + v["J_c"] + v["n_w"] * v["m_w"] * r_w0 ** 2, J_s=v["J_s"] + v["J_m"],

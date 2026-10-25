@@ -57,6 +57,21 @@ Sensitivity ranking for the PTO loads, largest first:
 4. engagement gap;
 5. belt friction.
 
+## Fast model (Phase A of the lap simulator)
+`cvtsim.fast` (spec 15) runs an 8 s launch in about 10 ms.
+* Calibrated on the full-model launch and hill climb.
+* Validated on full-model runs it was not fitted to (backshift scenario; CVTech 0651-1100 spring),
+  passing all acceptance checks: rpm within 3.6 %, primary travel within 1.1 mm, final speed
+  within 0.7 %, engagement within 0.6 %.
+* One fit-run miss: hill-climb final speed is 3.3 % off against the 3 % limit.
+* The calibration runs used two different friction smoothings: 0.05 m/s for the launch and hill
+  climb, 0.0125 m/s for the backshift and spring runs.
+
+Next phases:
+* **B:** tracks and driver for acceleration (150 ft), hill climb and endurance.
+* **C:** per-lap results and durability, and part sweeps.
+* No brakes yet, by the owner's choice.
+
 ## Open work, in order
 1. **Done:** the sensitivity bands (`runs/20261020-215336-uq-bands`, 30 samples, first 2 s) and a
    hill climb (`runs/20261020-213705-tune-default-hill_climb`) are committed.
