@@ -150,6 +150,11 @@ durability:  # docs/theory/12 section 7; keys refer to cvtsim/io/materials.yaml
   belt_line_offset: {value: 0.06009, range: [0.05959, 0.06059], unit: m, source: "CVTech-AAB Mini-Baja geometry drawing: belt line 60.09 +- 0.5 mm from the primary mounting face"}
   target_launches: {value: 1000, source: "ASSUMED reporting basis: bearing rating needed for an L10 of 1000 full launches (12 sec 7.4)"}
 
+driver:  # docs/theory/16 section 2; used by cvtsim.events
+  gain: {value: 0.5, unit: 1/(m/s), source: "ASSUMED throttle gain: full throttle 2 m/s below the target speed"}
+  throttle_lag: {value: 0.2, unit: s, source: "ASSUMED driver and throttle-cable lag"}
+  a_coast: {value: 0.5, range: [0.3, 1.0], unit: m/s^2, source: "ASSUMED planning deceleration when lifting off with no brakes; the fast model gives 0.6-0.7 m/s^2 on level ground at 8-16 m/s (road load + engine braking). Measure with a coast-down test"}
+
 sim:
   belt_nodes: {value: 200, source: "numerical choice (L0 = 4.4 mm; >= 22 nodes in the smallest wrap)"}
   dt: {value: 1.25e-7, unit: s, source: "numerical choice: speeds and forces converged to 1e-3 against dt/2 after engagement (tests/test_system.py); 2.5e-7 missed by up to 1e-3 on secondary speed"}

@@ -1,0 +1,7 @@
+description: "Acceleration event: standing start, full throttle on flat dirt."
+notes: "Length is a parameter: 150 ft (45.72 m) as in recent Baja SAE rules; some events use 100 ft. Check the current rules."
+length_basis: event
+t_limit: 15.0
+# segments: [length m, grade at start deg, grade at end deg, corner radius m (0 = straight), traction]
+segments:
+  - [45.72, 0.0, 0.0, 0.0, 1.0]

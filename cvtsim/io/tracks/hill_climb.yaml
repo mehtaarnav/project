@@ -1,0 +1,8 @@
+description: "Representative hill climb: short flat run-up, then a climb steepening to 20 deg."
+notes: "With the default tire grip (0.7 x 0.9) the car is traction-limited above about 22 deg, so steeper grades test the tires, not the CVT. Invented profile for comparing set-ups, not a measured course. Replace the segments with your course (grade in deg from a GPS or inclinometer log)."
+t_limit: 40.0
+segments:
+  - [15.0, 0.0, 0.0, 0.0, 1.0]
+  - [10.0, 0.0, 20.0, 0.0, 0.9]
+  - [50.0, 20.0, 20.0, 0.0, 0.9]
+  - [5.0, 20.0, 0.0, 0.0, 0.9]

@@ -20,7 +20,7 @@ CAL_KEYS = ("K", "g1", "g2", "c_mu", "s_h", "c_s", "c_s2")
 
 FCH = ["t", "w_e", "w_s", "x_p", "x_s", "r_p", "r_s", "F_fw", "F_spr", "F_p", "F_s", "F_pstar",
        "T_mean", "F_cap", "F_b", "slip", "stick", "v", "w_wheel", "F_tire", "T_eng", "T_load",
-       "P_slip", "T_belt", "E_kin", "W_in", "W_diss", "throttle", "grade", "tau"]
+       "P_slip", "T_belt", "E_kin", "W_in", "W_diss", "throttle", "grade", "tau", "s", "v_target"]
 NG = 4001  # geometry table points (15 section 2)
 
 
@@ -98,15 +98,18 @@ def stick_force(r_p, r_s, T_e, T_L, J_e, J_s, rpd, rsd, w_e, w_s):
 
 
 @maybe_njit
-def run_fast(sv, xg, rsg, phpg, phsg, rk, rc, hk, hc, eng_w, eng_T, sched, h, nsteps, nout):
+def run_fast(sv, xg, rsg, phpg, phsg, rk, rc, hk, hc, eng_w, eng_T, sched, h, nsteps, nout, trk, drv):
+    """Time scenario (sched) or, when drv[0] > 0, a track driven by distance (16):
+    trk rows [s, grade, traction, v_target]; drv = [mode, gain, throttle lag, s_end]."""
     (J_e, J_s, n_w, m_w, k_p, F_p0, g_p, x_stop, k_l, F_l0, k_t, th_t0, rp_low, rs_max, tb, sinb,
      mu, rhoA, mu_r, mu_b, m_veh, r_t, G, Crr, c_a, eta_d, mu_t, s0, v_min, b_L, h_L, rpm_cut,
      gov_band, T_mot, C_b, hA, f_b, T_amb, w0, m_ph, c_p, K, g1, g2, c_mu, s_h, c_s, c_s2) = sv
     stride = max(nsteps // max(nout - 1, 1), 1)
-    out = np.zeros((nsteps // stride + 1, 30))
+    out = np.zeros((nsteps // stride + 1, 32))
     w_e = w0; w_s = 0.0; v = 0.0; x_p = -g_p; T_b = T_amb; a_prev = 0.0
     stick = False; F_b = 0.0; tau = 0.0; T_s_prev = 0.0; xd_p = 0.0
     W_in = 0.0; W_d = 0.0; t = 0.0; k = 0; ks = 0
+    s_pos = 0.0; js = 0; thr_f = 1.0; v_tgt = 0.0; track = drv[0] > 0.0
     mup = c_mu * mu / sinb
     for n in range(nsteps + 1):
         # scenario schedule (14 section 1)
@@ -121,6 +124,17 @@ def run_fast(sv, xg, rsg, phpg, phsg, rk, rc, hk, hc, eng_w, eng_T, sched, h, ns
             thr = sched[ks, 1] + fz * (sched[ks + 1, 1] - sched[ks, 1])
             grd = sched[ks, 2] + fz * (sched[ks + 1, 2] - sched[ks, 2])
             trac = sched[ks, 3] + fz * (sched[ks + 1, 3] - sched[ks, 3])
+        if track:   # course and driver by distance (16 sections 1-2)
+            while js < trk.shape[0] - 2 and s_pos >= trk[js + 1, 0]:
+                js += 1
+            fz = (s_pos - trk[js, 0]) / (trk[js + 1, 0] - trk[js, 0])
+            fz = min(max(fz, 0.0), 1.0)
+            grd = trk[js, 1] + fz * (trk[js + 1, 1] - trk[js, 1])
+            trac = trk[js, 2] + fz * (trk[js + 1, 2] - trk[js, 2])
+            v_tgt = trk[js, 3] + fz * (trk[js + 1, 3] - trk[js, 3])
+            cmd = min(max(drv[1] * (v_tgt - v), 0.0), 1.0)
+            thr_f += h * (cmd - thr_f) / drv[2]
+            thr = thr_f
         T_e, _ = system.engine_torque(w_e, eng_w, eng_T, rpm_cut, gov_band)
         if thr != 1.0:
             T_e = thr * T_e - (1.0 - thr) * T_mot * np.tanh(w_e / 10.0)
@@ -198,6 +212,7 @@ def run_fast(sv, xg, rsg, phpg, phsg, rk, rc, hk, hc, eng_w, eng_T, sched, h, ns
             o[13] = F_cap; o[14] = F_b; o[15] = vrel; o[16] = 1.0 if stick else 0.0; o[17] = v
             o[18] = w_w; o[19] = F_x; o[20] = T_e; o[21] = T_L; o[22] = P_slip; o[23] = T_b
             o[24] = E; o[25] = W_in; o[26] = W_d; o[27] = thr; o[28] = grd; o[29] = tau
+            o[30] = s_pos; o[31] = v_tgt
             k += 1
         # integrate (explicit, 15 section 4)
         wd_e = (T_e - F_b * r_p) / J_e
@@ -216,6 +231,13 @@ def run_fast(sv, xg, rsg, phpg, phsg, rk, rc, hk, hc, eng_w, eng_T, sched, h, ns
             xd_p = 0.0
         T_b += h * (f_b * P_slip - hA * (T_b - T_amb)) / C_b
         t += h
+        s_pos += h * v
+        if track and s_pos >= drv[3]:
+            o = out[min(k, out.shape[0] - 1)]
+            o[0] = t; o[1] = w_e; o[2] = w_s; o[3] = x_p; o[17] = v; o[25] = W_in; o[26] = W_d
+            o[30] = s_pos; o[27] = thr; o[24] = 0.5 * J_e * w_e * w_e + 0.5 * J_s * w_s * w_s + 0.5 * m_veh * v * v
+            k = min(k + 1, out.shape[0])
+            break
         # re-stick when the slip speed reaches zero within capacity
         if engaged and not stick and F_cap > 0.0:
             vrel_new = (rp_low + max(x_p, 0.0) / (2.0 * tb)) * w_e - _interp(xg, rsg, max(x_p, 0.0)) * w_s
@@ -223,17 +245,31 @@ def run_fast(sv, xg, rsg, phpg, phsg, rk, rc, hk, hc, eng_w, eng_T, sched, h, ns
                 Fst = stick_force(r_p, r_s, T_e, T_L, J_e, J_s, 0.0, 0.0, w_e, w_s)
                 if abs(Fst) <= F_cap:
                     stick = True
-        if stick:   # hold the kinematic constraint exactly
-            r_pn = rp_low + max(x_p, 0.0) / (2.0 * tb)
+        if stick:   # hold the kinematic constraint exactly; its kinetic-energy change is booked
+            r_pn = rp_low + max(x_p, 0.0) / (2.0 * tb)     # as dissipation (the belt grabbing, 15 s4)
             r_sn = _interp(xg, rsg, max(x_p, 0.0))
-            w_s = r_pn * w_e / r_sn
+            # belt impulse P that restores r_p w_e = r_s w_s (loss P * v_rel / 2 >= 0)
+            P = (r_pn * w_e - r_sn * w_s) / (r_pn * r_pn / J_e + r_sn * r_sn / J_s)
+            E0 = 0.5 * J_e * w_e * w_e + 0.5 * J_s * w_s * w_s
+            w_e -= P * r_pn / J_e
+            w_s += P * r_sn / J_s
+            W_d += E0 - (0.5 * J_e * w_e * w_e + 0.5 * J_s * w_s * w_s)
     return out[:k]
 
 
-def simulate_fast(fm, t_end, h=2e-4, nout=None):
-    """Run the fast model for t_end seconds. Returns an (n, len(FCH)) array."""
+def simulate_fast(fm, t_end, h=2e-4, nout=None, track=None):
+    """Run the fast model for t_end seconds (or until the end of `track`). Returns (n, len(FCH)).
+
+    track: None (time scenario from build_fast) or dict(trk=(m, 4) array, gain, lag, s_end) (16).
+    """
     nsteps = int(round(t_end / h))
     nout = nout or int(t_end / 1e-2) + 1
     sv = np.array([fm["sc"][k] for k in SC_ORDER], dtype=np.float64)
+    if track is None:
+        trk, drv = np.zeros((2, 4)), np.zeros(4)
+        trk[1, 0] = 1.0
+    else:
+        trk = np.asarray(track["trk"], float)
+        drv = np.array([1.0, track["gain"], track["lag"], track["s_end"]])
     return run_fast(sv, fm["xg"], fm["rsg"], fm["phpg"], fm["phsg"], fm["rk"], fm["rc"], fm["hk"],
-                    fm["hc"], fm["eng_w"], fm["eng_T"], fm["sched"], h, nsteps, nout)
+                    fm["hc"], fm["eng_w"], fm["eng_T"], fm["sched"], h, nsteps, nout, trk, drv)

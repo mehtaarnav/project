@@ -4,42 +4,44 @@ calibration:
   g2: -1.6787869021230828
   c_s: 0.5678094226302864
   c_s2: 0.08109894397246713
-cost: 451.05320095379415
+note: Constants fitted before the belt-impulse correction (cvtsim/fast/model.py);
+  checks below are recomputed with the corrected model. A refit after the correction
+  converged to a worse local minimum (engagement 7.8 % off) and was not adopted.
 fit:
   20261020-211533-tune-default:
-    rpm_rms: 0.032131731337878014
+    rpm_rms: 0.032133224199400845
     rpm_ok: true
-    xp_rms_mm: 1.08152129616341
+    xp_rms_mm: 1.0815173909193172
     xp_ok: true
-    v_end: 0.007101297171193034
+    v_end: 0.007101323511324348
     v_ok: true
     engage: 0.004092660300430699
     engage_ok: true
   20261020-213705-tune-default-hill_climb:
-    rpm_rms: 0.040951848103944276
+    rpm_rms: 0.04095199156322493
     rpm_ok: true
-    xp_rms_mm: 1.1635638772583812
+    xp_rms_mm: 1.163562661971028
     xp_ok: true
-    v_end: 0.033228217410057395
+    v_end: 0.033228690061959755
     v_ok: false
     engage: 0.004092660300430699
     engage_ok: true
 validation:
   20261025-201504-tune-default-backshift:
-    rpm_rms: 0.036358495464168944
+    rpm_rms: 0.037389693944333335
     rpm_ok: true
-    xp_rms_mm: 1.076211204553866
+    xp_rms_mm: 1.0883594150852736
     xp_ok: true
-    v_end: 0.004161797244328771
+    v_end: 0.003352102257177395
     v_ok: true
     engage: 0.004092660300430699
     engage_ok: true
   20261025-201508-tune-cvtech_0651_1100:
-    rpm_rms: 0.031202574595406367
+    rpm_rms: 0.03120527185205093
     rpm_ok: true
-    xp_rms_mm: 1.010357694966678
+    xp_rms_mm: 1.0103582141645566
     xp_ok: true
-    v_end: 0.0072361910423873336
+    v_end: 0.007237107065206542
     v_ok: true
     engage: 0.0056161640453152965
     engage_ok: true

@@ -73,6 +73,31 @@ from cvtsim.fast.model import build_fast, simulate_fast, FCH
 res = simulate_fast(build_fast(load(tune="cvtech_stock"), scenario="hill_climb"), 8.0)
 ```
 
+## Events
+
+Run a set-up through a whole event on the fast model:
+
+```
+python -m cvtsim.events run cvtech_stock --event acceleration      # 150 ft, standing start
+python -m cvtsim.events run cvtech_stock --event hill_climb
+python -m cvtsim.events run cvtech_stock --event endurance --laps 106   # about 4 h, runs in about 30 s
+python -m cvtsim.events compare default cvtech_stock cvtech_0651_1100 --event endurance
+```
+
+A course is a list of segments (length, grade, corner radius, traction) in
+`cvtsim/io/tracks/`. The driver follows a target speed set by corner grip. There are no brakes
+yet, so the driver slows only by lifting off. The hill-climb and endurance courses are invented
+and representative; replace them with your own course. Each run reports:
+* time;
+* speed;
+* engine rpm band;
+* belt slip;
+* ratio range;
+* wheel spin;
+* how much faster than the corner limit the car arrived.
+
+See [docs/theory/16_events.md](docs/theory/16_events.md).
+
 ## Your car
 
 The DR26 car is the example. Copy its parameter file, replace the numbers, and run with
