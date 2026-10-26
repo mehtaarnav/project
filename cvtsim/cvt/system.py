@@ -494,6 +494,36 @@ def relax(model, t_relax=0.02):
     model["st"] = st
 
 
+def warm_start(model, w_e, x_p, x_s, w_s, v, T_belt=None, t0=0.0, theta_e=0.0):
+    """Start the full model mid-event from a running state (17 section 2).
+
+    Lays the belt on the open path at the free pitch radii of x_p and x_s, moving at the belt
+    speed r_p w_e, and sets the shaft, sheave and vehicle states. The belt tension and the flank
+    penetration then build up over a short start-up transient that the caller discards.
+    """
+    g = model["p"]["derived"]["geometry"]
+    tb = g["tan_beta"]
+    r_p = g["rp_min"] + max(x_p, 0.0) / (2.0 * tb)
+    r_s = g["rs_max"] - x_s / (2.0 * tb)
+    N = model["X"].shape[0]
+    X, _ = init_belt_on_path(r_p, r_s, g["C"], N)
+    d = np.roll(X, -1, axis=0) - np.roll(X, 1, axis=0)
+    tang = d / np.hypot(d[:, 0], d[:, 1])[:, None]
+    model["X"][:] = X
+    model["V"][:] = tang * (r_p * w_e)
+    st = model["st"]
+    st[:] = 0.0
+    st[0] = st[ST.index("w_c")] = w_e
+    st[1] = x_p
+    st[3] = w_s
+    st[4] = x_s
+    st[6] = t0
+    st[7] = st[ST.index("theta_c")] = theta_e
+    st[9] = v
+    st[10] = T_belt if T_belt is not None else model["p"]["derived"]["belt_thermal"]["T_amb"]
+    return model
+
+
 def simulate(model, t_end, nout=3000, n_frames=400):
     """Run t_end seconds. Returns (res, snaps) per docs/viewer_contract.md.
 

@@ -1,0 +1,16 @@
+overrides: {}
+parameters:
+  tunes:
+  - default
+  - cvtech_stock
+  - cvtech_0651_1100
+  - cvtech_0551_1119
+  - heavy_flyweights
+  - stiff_primary
+  - progressive_helix
+  final_drives:
+  - 8.1
+  - 8.96
+  event: endurance
+  laps: null
+  car: null

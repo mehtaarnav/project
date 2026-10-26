@@ -1,0 +1,11 @@
+{
+  "name": "sweep-endurance",
+  "group": "event",
+  "tags": [],
+  "started": "20261026-010022",
+  "commit": "8b4780e061925800aff05d320d724cf84d899138",
+  "dirty": true,
+  "python": "3.13.16",
+  "host": "vm",
+  "wall_s": 0.0
+}

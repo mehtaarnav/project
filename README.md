@@ -98,6 +98,18 @@ and representative; replace them with your own course. Each run reports:
 
 See [docs/theory/16_events.md](docs/theory/16_events.md).
 
+Loads and durability over a whole event, with the worst moments replayed in the full model, and
+sweeps over set-ups and final drives:
+
+```
+python -m cvtsim.event_loads run cvtech_stock --event endurance --laps 106 --hours 4 --replays 3
+python -m cvtsim.event_loads sweep default cvtech_stock cvtech_0651_1100 --event endurance --final-drive 8.1 8.96
+```
+
+The fast model's event loads are mean-torque loads. The replays add firing pulses and belt
+dynamics at the moments where the loads peak. See
+[docs/theory/17_event_loads.md](docs/theory/17_event_loads.md).
+
 ## Your car
 
 The DR26 car is the example. Copy its parameter file, replace the numbers, and run with

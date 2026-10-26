@@ -72,6 +72,22 @@ Next phases:
 * **C:** per-lap results and durability, and part sweeps.
 * No brakes yet, by the owner's choice.
 
+## Events and event loads (Phases B and C)
+* **Events (spec 16):** `python -m cvtsim.events` runs acceleration (150 ft), hill climb (invented,
+  20°) and endurance (invented 1.49 km lap) on the fast model. 4 h of endurance takes about 26 s.
+  There are no brakes; the driver lifts off, and corner overspeed is reported.
+* **Event loads (spec 17):** `python -m cvtsim.event_loads run` gives mean-torque durability over
+  an event, then replays the 3 worst windows in the full model, warm-started mid-event.
+  * The warm start is validated against an uninterrupted run: peaks within 3 %.
+  * Endurance, default set-up: the PTO side load peaks mid-lap (1553 N), above the launch
+    (1391 N). The launch still sets the shaft Goodman factors (1.41 crank PTO, 1.03 jackshaft).
+  * The mean-torque event loads read about 2.5x low on peaks. Use the replays for design values.
+* **Sweep:** `python -m cvtsim.event_loads sweep` runs tunes × final drives on an event. For the
+  catalogue springs and weights, event times differ by under 1 %, because the dyno power curve is
+  flat from 2400 to 3600 rpm.
+  * Final drive 8.96 against 8.1: acceleration 0.08 s faster, hill climb 0.1 s faster, endurance
+    lap 0.2 s slower, less belt slip.
+
 ## Open work, in order
 1. **Done:** the sensitivity bands (`runs/20261020-215336-uq-bands`, 30 samples, first 2 s) and a
    hill climb (`runs/20261020-213705-tune-default-hill_climb`) are committed.

@@ -21,6 +21,9 @@ forms only — run it to reproduce).
 | [12_fatigue_bearings.md](12_fatigue_bearings.md) | rainflow, Goodman, Miner, ISO 281, launch durability | `cvtsim.fe.fatigue`, `cvtsim.fe.bearings`, `cvtsim.post.durability` |
 | [13_belt_life_efficiency.md](13_belt_life_efficiency.md) | belt life and CVT efficiency | `cvtsim.post` |
 | [14_scenarios.md](14_scenarios.md) | hill climb, backshift, landing | `cvtsim.cvt.system.schedule` |
+| [15_fast_cvt.md](15_fast_cvt.md) | fast CVT model for whole events, calibration | `cvtsim.fast` |
+| [16_events.md](16_events.md) | courses, driver, event results | `cvtsim.events` |
+| [17_event_loads.md](17_event_loads.md) | event durability, full-model replays, sweeps | `cvtsim.event_loads` |
 | [literature.md](literature.md) | literature review + verification status | — |
 
 ## Global conventions (all modules)

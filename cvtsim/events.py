@@ -71,9 +71,11 @@ def target_speed(s, g, tr, R, mu_lat, a_coast):
     return v
 
 
-def run_event(tune="default", event="acceleration", car=None, laps=None, cal=None, out_dt=0.05):
-    """Simulate one event; returns (metrics dict, result array, course dict)."""
-    p = load(car, tune=tune) if car else load(tune=tune)
+def run_event(tune="default", event="acceleration", car=None, laps=None, cal=None, out_dt=0.05, params=None):
+    """Simulate one event; returns (metrics dict, result array, course dict).
+
+    params: a loaded parameter dict to use instead of loading `tune` (e.g. with overrides)."""
+    p = params if params is not None else (load(car, tune=tune) if car else load(tune=tune))
     tk = load_track(event)
     s, g, tr, R = course(tk, laps)
     drv = p["driver"]
